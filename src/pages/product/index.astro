@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { site } from '../../data/site';
+---
+<BaseLayout title={`Product — Canonical Cloud`} description={`How Canonical Cloud frames its product, workflow, and access boundaries.`}>
+  <section class="page-hero shell"><p class="eyebrow">Product</p><h1>A legible path through shared work.</h1><p>{site.summary}</p></section>
+  <section class="section shell card-grid">
+    {site.capabilities.map(([title, body], index) => <article class="card"><span>{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{body}</p></article>)}
+  </section>
+  <section class="section shell two-column"><div><p class="eyebrow">Lifecycle</p><h2>Prepare, coordinate, carry forward.</h2></div><ol class="timeline"><li><strong>Prepare</strong><span>Make the purpose and boundaries visible.</span></li><li><strong>Coordinate</strong><span>Keep current state and responsibility understandable.</span></li><li><strong>Carry forward</strong><span>Turn decisions into explicit, durable handoffs.</span></li></ol></section>
+</BaseLayout>
