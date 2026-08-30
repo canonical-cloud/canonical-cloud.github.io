@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { site } from '../../data/site';
+---
+<BaseLayout title={`About — Canonical Cloud`} description={`About Canonical Cloud and its public GitHub organization.`}>
+  <section class="page-hero shell"><p class="eyebrow">About</p><h1>One public home, with clear paths onward.</h1><p>{site.summary}</p><div class="actions"><a class="button" href={site.githubUrl}>Explore the GitHub organization</a><a class="button secondary" href={site.authUrl}>Create an account</a></div></section>
+  <section class="section shell two-column"><div><p class="eyebrow">Working principles</p><h2>Explicit inputs. Typed boundaries. Effects pushed outward.</h2></div><p class="large-copy">The organization favors software whose important states and transitions can be explained, tested, and composed. Public context belongs here; customer and organization actions belong in their authenticated applications.</p></section>
+</BaseLayout>

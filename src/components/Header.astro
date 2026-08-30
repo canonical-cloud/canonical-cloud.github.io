@@ -1,0 +1,32 @@
+---
+import { site } from '../data/site';
+---
+<header class="site-header">
+  <div class="nav-wrap">
+    <a class="brand" href="/" aria-label={`Canonical Cloud home`}>
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Canonical Cloud</span>
+    </a>
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a href="/product/">Product</a>
+      <a href="/trust/">Trust</a>
+      <a href="/about/">About</a>
+      <a href={site.githubUrl}>GitHub</a>
+    </nav>
+    <div class="desktop-actions">
+      <a class="text-action" href={site.userUrl}>Log in</a>
+      <a class="button small" href={site.authUrl}>Sign up</a>
+    </div>
+    <details class="mobile-nav">
+      <summary aria-label="Open navigation">Menu</summary>
+      <nav aria-label="Mobile navigation">
+        <a href="/product/">Product</a>
+        <a href="/trust/">Trust</a>
+        <a href="/about/">About</a>
+        <a href={site.githubUrl}>GitHub</a>
+        <a href={site.userUrl}>Log in</a>
+        <a class="button" href={site.authUrl}>Sign up</a>
+      </nav>
+    </details>
+  </div>
+</header>

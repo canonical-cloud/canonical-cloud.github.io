@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { site } from '../../data/site';
+---
+<BaseLayout title={`Trust — Canonical Cloud`} description={`Trust, authentication, provenance, and public-site boundaries for Canonical Cloud.`}>
+  <section class="page-hero shell"><p class="eyebrow">Trust</p><h1>Trust starts with a boundary you can see.</h1><p>{site.displayName} uses a public, static marketing site. It does not collect credentials. User, organization, and account-creation flows are delegated to their dedicated application and Shared Auth surfaces.</p></section>
+  <section class="section shell card-grid"><article class="card"><span>01</span><h2>Authentication stays separate</h2><p>Signup routes to the dedicated auth surface; this site does not imitate a login form or store session material.</p></article><article class="card"><span>02</span><h2>Claims stay reviewable</h2><p>Current availability belongs in the source repositories and releases. Planned work is not presented as shipped behavior.</p></article><article class="card"><span>03</span><h2>Delivery stays inspectable</h2><p>The site is built from Astro source and deployed through GitHub Pages so source and publication can be reviewed independently.</p></article></section>
+</BaseLayout>

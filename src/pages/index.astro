@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../data/site';
+---
+<BaseLayout title={`Canonical Cloud — Turn compliance readiness into an operating practice.`} description={site.summary}>
+  <section class="hero shell">
+    <div class="hero-copy">
+      <p class="eyebrow">{site.eyebrow}</p>
+      <h1>{site.headline}</h1>
+      <p class="lede">{site.summary}</p>
+      <div class="actions">
+        <a class="button" href="/product/">Explore the product</a>
+        <a class="button secondary" href={site.authUrl}>Create an account</a>
+      </div>
+      <p class="status"><span aria-hidden="true"></span>{site.status}</p>
+    </div>
+    <div class="hero-art" aria-label="A connected set of rooms and handoffs">
+      <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+      <div class="room room-main"><small>Shared context</small><strong>{site.displayName}</strong><span>Purpose → presence → next step</span></div>
+      <div class="room room-a"><small>01</small><strong>Prepare</strong></div>
+      <div class="room room-b"><small>02</small><strong>Coordinate</strong></div>
+      <div class="room room-c"><small>03</small><strong>Continue</strong></div>
+    </div>
+  </section>
+  <section class="proof-strip" aria-label="Product principles">
+    <span>Clear purpose</span><span>Explicit ownership</span><span>Respectful boundaries</span><span>Durable handoffs</span>
+  </section>
+  <section class="section shell">
+    <div class="section-heading">
+      <p class="eyebrow">A useful first view</p>
+      <h2>Understand the work before you enter the workspace.</h2>
+      <p>Public marketing, personal work, organization work, and account creation are separate surfaces. The site points to each one directly instead of asking a static page to handle credentials.</p>
+    </div>
+    <div class="card-grid">
+      {site.capabilities.map(([title, body], index) => (
+        <article class="card"><span>{String(index + 1).padStart(2, '0')}</span><h3>{title}</h3><p>{body}</p></article>
+      ))}
+    </div>
+  </section>
+  <section class="access-section shell">
+    <div><p class="eyebrow">Choose your doorway</p><h2>Public context first. Authenticated work where it belongs.</h2></div>
+    <div class="access-grid">
+      <a href={site.userUrl}><small>For individuals</small><strong>User workspace</strong><span>Log in to your personal product surface.</span></a>
+      <a href={site.orgUrl}><small>For teams</small><strong>Organization workspace</strong><span>Enter the shared workspace for your organization.</span></a>
+      <a href={site.authUrl}><small>New here</small><strong>Create an account</strong><span>Sign up through the dedicated authentication boundary.</span></a>
+    </div>
+  </section>
+</BaseLayout>
