@@ -1,0 +1,227 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+const priceFunction = import.meta.env.PUBLIC_CANONICAL_PRICING_FUNCTION ?? 'canonical-prices';
+const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
+---
+<BaseLayout
+  title="Canonical Cloud — Service pricing"
+  description="Email-verified access to proposed Canonical Cloud managed-readiness service tiers."
+>
+  <section class="price-hero shell">
+    <div class="price-intro">
+      <p class="eyebrow">Service pricing</p>
+      <h1>Verify your email to view the current proposed service tiers.</h1>
+      <p class="lede">
+        Pricing is intentionally separated from the public marketing page. The authenticated catalog contains
+        proposed starting prices for managed readiness and assurance engineering; a signed Statement of Work
+        controls actual scope, fees, term, and billing.
+      </p>
+    </div>
+
+    <div class="price-gate" data-configured={configured ? 'true' : 'false'}>
+      <div id="configuration-error" class="gate-message error" hidden>
+        Pricing access is not configured for this deployment. The build must provide the approved public
+        Supabase URL and publishable key.
+      </div>
+
+      <form id="email-form" class="gate-card">
+        <p class="step">Step 1 of 2</p>
+        <h2>Send a one-time code</h2>
+        <label for="price-email">Work email</label>
+        <input id="price-email" name="email" type="email" autocomplete="email" required />
+        <button class="button" type="submit">Email me a code</button>
+        <p class="fine-print">
+          Supabase Auth sends the sign-in message. The project email template must use the OTP token form rather
+          than a magic link. Requests are subject to the project’s authentication rate limits.
+        </p>
+      </form>
+
+      <form id="otp-form" class="gate-card" hidden>
+        <p class="step">Step 2 of 2</p>
+        <h2>Enter the code</h2>
+        <label for="price-otp">One-time code</label>
+        <input id="price-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" minlength="6" required />
+        <button class="button" type="submit">Verify and view pricing</button>
+        <button id="change-email" class="text-button" type="button">Use a different email</button>
+      </form>
+
+      <p id="gate-status" class="gate-message" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section id="pricing-content" class="section shell" hidden aria-live="polite">
+    <div class="section-heading">
+      <p class="eyebrow">Verified catalog</p>
+      <h2>Proposed starting prices</h2>
+      <p id="pricing-boundary">
+        These are planning/list-price starting points. They are not an offer, audit opinion, certification,
+        attestation, or authorization. The signed SOW controls the customer engagement.
+      </p>
+    </div>
+    <div id="price-grid" class="price-grid"></div>
+  </section>
+
+  <noscript>
+    <section class="section shell"><p>JavaScript is required for email verification and authenticated pricing.</p></section>
+  </noscript>
+
+  <script define:vars={{ supabaseUrl, supabaseKey, priceFunction, configured }}>
+    const emailForm = document.querySelector('#email-form');
+    const otpForm = document.querySelector('#otp-form');
+    const emailInput = document.querySelector('#price-email');
+    const otpInput = document.querySelector('#price-otp');
+    const status = document.querySelector('#gate-status');
+    const changeEmail = document.querySelector('#change-email');
+    const content = document.querySelector('#pricing-content');
+    const grid = document.querySelector('#price-grid');
+    const configError = document.querySelector('#configuration-error');
+    let pendingEmail = '';
+
+    const setStatus = (message, isError = false) => {
+      status.textContent = message;
+      status.classList.toggle('error', isError);
+    };
+
+    const request = async (path, options = {}) => {
+      const response = await fetch(`${supabaseUrl}${path}`, {
+        ...options,
+        headers: {
+          apikey: supabaseKey,
+          'content-type': 'application/json',
+          ...(options.headers ?? {}),
+        },
+      });
+      let body = {};
+      try { body = await response.json(); } catch { body = {}; }
+      if (!response.ok) {
+        const message = body?.msg ?? body?.message ?? body?.error_description ?? body?.error ?? `request_failed_${response.status}`;
+        throw new Error(String(message));
+      }
+      return body;
+    };
+
+    const renderPricing = (catalog) => {
+      if (!catalog || catalog.schema !== 'canonical-cloud.service-tier-catalog/v1' || !Array.isArray(catalog.tiers)) {
+        throw new Error('pricing_contract_mismatch');
+      }
+      grid.replaceChildren();
+      for (const tier of catalog.tiers) {
+        if (!tier || typeof tier.name !== 'string' || !Number.isFinite(tier.monthlyFeeUsd)) {
+          throw new Error('pricing_tier_invalid');
+        }
+        const card = document.createElement('article');
+        card.className = 'price-card';
+
+        const name = document.createElement('h3');
+        name.textContent = tier.name;
+        const price = document.createElement('p');
+        price.className = 'price';
+        price.textContent = `${new Intl.NumberFormat('en-US', { style: 'currency', currency: catalog.currency ?? 'USD', maximumFractionDigits: 0 }).format(tier.monthlyFeeUsd)} / month`;
+        const scope = document.createElement('p');
+        scope.textContent = tier.frameworkScope ?? '';
+        const cadence = document.createElement('p');
+        cadence.className = 'cadence';
+        cadence.textContent = tier.operatingCadence ?? '';
+        const list = document.createElement('ul');
+        for (const feature of Array.isArray(tier.features) ? tier.features : []) {
+          const item = document.createElement('li');
+          item.textContent = String(feature);
+          list.append(item);
+        }
+        card.append(name, price, scope, cadence, list);
+        grid.append(card);
+      }
+      content.hidden = false;
+      emailForm.hidden = true;
+      otpForm.hidden = true;
+      setStatus('Email verified. Pricing loaded from the authenticated catalog.');
+      content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    if (!configured) {
+      configError.hidden = false;
+      emailForm.hidden = true;
+      setStatus('Pricing authentication is unavailable in this deployment.', true);
+    } else {
+      emailForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        pendingEmail = emailInput.value.trim().toLowerCase();
+        if (!pendingEmail) return;
+        setStatus('Sending one-time code…');
+        try {
+          await request('/auth/v1/otp', {
+            method: 'POST',
+            body: JSON.stringify({ email: pendingEmail, create_user: true }),
+          });
+          emailForm.hidden = true;
+          otpForm.hidden = false;
+          otpInput.focus();
+          setStatus(`Code sent to ${pendingEmail}.`);
+        } catch (error) {
+          setStatus(`Could not send code: ${error.message}`, true);
+        }
+      });
+
+      otpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const token = otpInput.value.trim();
+        if (!pendingEmail || !token) return;
+        setStatus('Verifying code…');
+        try {
+          const session = await request('/auth/v1/verify', {
+            method: 'POST',
+            body: JSON.stringify({ email: pendingEmail, token, type: 'email' }),
+          });
+          const accessToken = session.access_token ?? session.session?.access_token;
+          if (typeof accessToken !== 'string' || accessToken.length < 20) {
+            throw new Error('verified_session_missing');
+          }
+          const catalog = await request(`/functions/v1/${encodeURIComponent(priceFunction)}`, {
+            method: 'GET',
+            headers: { authorization: `Bearer ${accessToken}` },
+          });
+          renderPricing(catalog);
+        } catch (error) {
+          setStatus(`Verification failed: ${error.message}`, true);
+        } finally {
+          otpInput.value = '';
+        }
+      });
+
+      changeEmail.addEventListener('click', () => {
+        pendingEmail = '';
+        otpInput.value = '';
+        otpForm.hidden = true;
+        emailForm.hidden = false;
+        setStatus('');
+        emailInput.focus();
+      });
+    }
+  </script>
+</BaseLayout>
+
+<style>
+  .price-hero { padding: 7rem 0 3rem; display: grid; grid-template-columns: 1.1fr .9fr; gap: 4rem; align-items: start; }
+  .price-intro h1 { max-width: 14ch; }
+  .price-gate { position: relative; }
+  .gate-card { display: grid; gap: 1rem; padding: 2rem; background: white; border: 1px solid rgba(7,19,38,.12); border-radius: 1.25rem; box-shadow: 0 24px 70px rgba(29,78,216,.09); }
+  .gate-card h2 { margin: 0; }
+  .step { margin: 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .13em; font-weight: 800; color: var(--accent); }
+  label { font-weight: 700; }
+  input { width: 100%; border: 1px solid rgba(7,19,38,.22); border-radius: .75rem; padding: .9rem 1rem; font: inherit; background: #fff; color: var(--ink); }
+  input:focus { outline: 3px solid rgba(29,78,216,.2); border-color: var(--accent); }
+  .fine-print { font-size: .84rem; line-height: 1.55; opacity: .72; margin: 0; }
+  .gate-message { margin: 1rem 0 0; min-height: 1.5rem; }
+  .gate-message.error { color: #991b1b; }
+  .text-button { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; justify-self: start; font: inherit; }
+  .price-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1.25rem; }
+  .price-card { padding: 1.6rem; background: white; border: 1px solid rgba(7,19,38,.12); border-radius: 1rem; }
+  .price-card h3 { margin-top: 0; }
+  .price { font-size: 1.55rem; font-weight: 850; letter-spacing: -.03em; color: var(--accent); }
+  .cadence { font-weight: 650; }
+  .price-card li { margin-bottom: .6rem; line-height: 1.45; }
+  @media (max-width: 820px) { .price-hero, .price-grid { grid-template-columns: 1fr; } .price-hero { gap: 2rem; padding-top: 4rem; } }
+</style>
