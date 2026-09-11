@@ -1,0 +1,282 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const supabaseUrl = import.meta.env.PUBLIC_CANONICAL_SUPABASE_URL ?? '';
+const publishableKey = import.meta.env.PUBLIC_CANONICAL_SUPABASE_PUBLISHABLE_KEY ?? '';
+const pricesFunctionUrl =
+  import.meta.env.PUBLIC_CANONICAL_PRICES_FUNCTION_URL ??
+  (supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}/functions/v1/canonical-prices` : '');
+---
+<BaseLayout
+  title="Canonical Cloud pricing — email-verified access"
+  description="View Canonical Cloud's current managed compliance service tiers after email verification."
+>
+  <section class="prices-shell shell" data-pricing-gate data-supabase-url={supabaseUrl} data-publishable-key={publishableKey} data-prices-function-url={pricesFunctionUrl}>
+    <div class="prices-intro">
+      <p class="eyebrow">Service tiers</p>
+      <h1>Simple operating tiers. Scope still belongs in the SOW.</h1>
+      <p class="lede">Verify your email to view current planning/list pricing for Canonical Cloud managed compliance services.</p>
+      <p class="boundary">The prices page is informational. A signed MSA and SOW control scope, fees, acceptance, SLA terms, and legal obligations. Independent audit, certification, QSA, 3PAO, legal, and other third-party fees are not included unless a signed SOW says otherwise.</p>
+    </div>
+
+    <div class="gate-card" id="gate-card">
+      <div id="configuration-error" class="notice error" hidden>
+        Pricing access is not configured for this deployment. The site owner must configure the public Supabase URL, publishable key, and pricing-function URL in GitHub Actions repository variables.
+      </div>
+
+      <form id="email-form" class="gate-form" novalidate>
+        <label for="pricing-email">Work email</label>
+        <div class="field-row">
+          <input id="pricing-email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.com" />
+          <button class="button" type="submit">Email me a code</button>
+        </div>
+        <p class="form-help">We use Supabase Auth to send a one-time email code. Access is session-scoped in this browser.</p>
+      </form>
+
+      <form id="otp-form" class="gate-form" hidden novalidate>
+        <label for="pricing-otp">One-time code</label>
+        <div class="field-row">
+          <input id="pricing-otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="8" required placeholder="123456" />
+          <button class="button" type="submit">Verify and view prices</button>
+        </div>
+        <p class="form-help">Enter the code sent to <strong id="otp-email"></strong>.</p>
+      </form>
+
+      <p id="gate-status" class="gate-status" role="status" aria-live="polite"></p>
+    </div>
+
+    <section id="pricing-content" class="pricing-content" hidden aria-labelledby="pricing-heading">
+      <div class="pricing-heading-row">
+        <div>
+          <p class="eyebrow">Verified pricing</p>
+          <h2 id="pricing-heading">Managed compliance service tiers</h2>
+        </div>
+        <button type="button" class="text-button" id="sign-out-pricing">End pricing session</button>
+      </div>
+      <div id="tier-grid" class="tier-grid"></div>
+      <div class="price-notes">
+        <h3>What these prices mean</h3>
+        <p>These are 2026 planning/list prices, not self-executing offers. Customer-specific scope may vary after diagnostic and commercial review. The executed SOW controls.</p>
+        <p>Canonical Cloud provides readiness, software, implementation support, coordination, and managed operations. It does not issue independent assurance opinions or guarantee an evaluator outcome.</p>
+      </div>
+    </section>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const root = document.querySelector('[data-pricing-gate]');
+      if (!root) return;
+
+      const supabaseUrl = root.dataset.supabaseUrl || '';
+      const publishableKey = root.dataset.publishableKey || '';
+      const pricesFunctionUrl = root.dataset.pricesFunctionUrl || '';
+      const configured = Boolean(supabaseUrl && publishableKey && pricesFunctionUrl);
+      const sessionKey = 'canonical-prices-access-token';
+      const emailKey = 'canonical-prices-email';
+
+      const emailForm = document.getElementById('email-form');
+      const otpForm = document.getElementById('otp-form');
+      const emailInput = document.getElementById('pricing-email');
+      const otpInput = document.getElementById('pricing-otp');
+      const otpEmail = document.getElementById('otp-email');
+      const status = document.getElementById('gate-status');
+      const configError = document.getElementById('configuration-error');
+      const gateCard = document.getElementById('gate-card');
+      const content = document.getElementById('pricing-content');
+      const tierGrid = document.getElementById('tier-grid');
+      const signOut = document.getElementById('sign-out-pricing');
+
+      const setStatus = (message, kind = '') => {
+        status.textContent = message;
+        status.dataset.kind = kind;
+      };
+
+      const jsonRequest = async (url, init) => {
+        const response = await fetch(url, init);
+        let payload = {};
+        try { payload = await response.json(); } catch { payload = {}; }
+        if (!response.ok) {
+          const detail = typeof payload?.msg === 'string' ? payload.msg :
+            typeof payload?.error_description === 'string' ? payload.error_description :
+            typeof payload?.error === 'string' ? payload.error : `request failed (${response.status})`;
+          throw new Error(detail);
+        }
+        return payload;
+      };
+
+      const renderTiers = (catalog) => {
+        if (!catalog || catalog.schema !== 'canonical-cloud.service-tier-catalog/v1' || !Array.isArray(catalog.tiers) || catalog.tiers.length !== 3) {
+          throw new Error('pricing payload failed its expected contract');
+        }
+
+        tierGrid.replaceChildren();
+        for (const tier of catalog.tiers) {
+          const article = document.createElement('article');
+          article.className = 'tier-card';
+
+          const eyebrow = document.createElement('p');
+          eyebrow.className = 'tier-code';
+          eyebrow.textContent = String(tier.code || '').toUpperCase();
+
+          const title = document.createElement('h3');
+          title.textContent = String(tier.name || 'Tier');
+
+          const price = document.createElement('p');
+          price.className = 'tier-price';
+          const amount = Number(tier.monthlyFeeUsd);
+          price.textContent = Number.isFinite(amount) ? `$${amount.toLocaleString('en-US')}/month` : 'Contact us';
+
+          const meta = document.createElement('p');
+          meta.className = 'tier-meta';
+          meta.textContent = `${Number(tier.minimumTermMonths)}-month minimum · ${String(tier.frameworkScope)} · ${Number(tier.advisoryHoursPerMonth)} advisory hours/month`;
+
+          const cadence = document.createElement('p');
+          cadence.textContent = String(tier.operatingCadence || '');
+
+          const list = document.createElement('ul');
+          for (const feature of Array.isArray(tier.features) ? tier.features : []) {
+            const item = document.createElement('li');
+            item.textContent = String(feature);
+            list.append(item);
+          }
+
+          article.append(eyebrow, title, price, meta, cadence, list);
+          tierGrid.append(article);
+        }
+      };
+
+      const loadPrices = async (accessToken) => {
+        setStatus('Loading verified pricing…');
+        const catalog = await jsonRequest(pricesFunctionUrl, {
+          method: 'GET',
+          headers: {
+            apikey: publishableKey,
+            authorization: `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        });
+        renderTiers(catalog);
+        gateCard.hidden = true;
+        content.hidden = false;
+        setStatus('');
+      };
+
+      if (!configured) {
+        configError.hidden = false;
+        emailForm.querySelector('button').disabled = true;
+        setStatus('Pricing authentication is not configured on this deployment.', 'error');
+        return;
+      }
+
+      emailForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = String(emailInput.value || '').trim().toLowerCase();
+        if (!email || !emailInput.checkValidity()) {
+          emailInput.reportValidity();
+          return;
+        }
+
+        const button = emailForm.querySelector('button');
+        button.disabled = true;
+        setStatus('Requesting a one-time code…');
+        try {
+          await jsonRequest(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/otp`, {
+            method: 'POST',
+            headers: { apikey: publishableKey, 'content-type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          sessionStorage.setItem(emailKey, email);
+          otpEmail.textContent = email;
+          otpForm.hidden = false;
+          otpInput.focus();
+          setStatus('Code sent. Check your email.', 'success');
+        } catch (error) {
+          setStatus(`Unable to send code: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      otpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = sessionStorage.getItem(emailKey) || String(emailInput.value || '').trim().toLowerCase();
+        const token = String(otpInput.value || '').trim();
+        if (!email || !token || !otpInput.checkValidity()) {
+          otpInput.reportValidity();
+          return;
+        }
+
+        const button = otpForm.querySelector('button');
+        button.disabled = true;
+        setStatus('Verifying code…');
+        try {
+          const verified = await jsonRequest(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/verify`, {
+            method: 'POST',
+            headers: { apikey: publishableKey, 'content-type': 'application/json' },
+            body: JSON.stringify({ email, token, type: 'email' }),
+          });
+          if (typeof verified?.access_token !== 'string' || !verified.access_token) throw new Error('verification returned no session');
+          sessionStorage.setItem(sessionKey, verified.access_token);
+          await loadPrices(verified.access_token);
+        } catch (error) {
+          sessionStorage.removeItem(sessionKey);
+          setStatus(`Unable to verify code: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      signOut.addEventListener('click', () => {
+        sessionStorage.removeItem(sessionKey);
+        sessionStorage.removeItem(emailKey);
+        content.hidden = true;
+        gateCard.hidden = false;
+        otpForm.hidden = true;
+        otpInput.value = '';
+        setStatus('Pricing session ended.');
+        emailInput.focus();
+      });
+
+      const existing = sessionStorage.getItem(sessionKey);
+      if (existing) {
+        loadPrices(existing).catch(() => {
+          sessionStorage.removeItem(sessionKey);
+          gateCard.hidden = false;
+          content.hidden = true;
+          setStatus('Your prior pricing session expired. Request a new code.', 'error');
+        });
+      }
+    })();
+  </script>
+
+  <style>
+    .prices-shell { padding: clamp(3rem, 8vw, 7rem) 0; }
+    .prices-intro { max-width: 58rem; }
+    .prices-intro h1 { max-width: 15ch; }
+    .boundary { max-width: 54rem; color: #334155; line-height: 1.7; }
+    .gate-card { margin-top: 2.5rem; max-width: 48rem; padding: clamp(1.25rem, 4vw, 2rem); border: 1px solid #cbd5e1; border-radius: 1.25rem; background: #fff; box-shadow: 0 18px 60px rgba(7, 19, 38, 0.08); }
+    .gate-form + .gate-form { margin-top: 1.5rem; }
+    .gate-form label { display: block; margin-bottom: .55rem; font-weight: 750; }
+    .field-row { display: flex; gap: .75rem; align-items: stretch; }
+    .field-row input { min-width: 0; flex: 1; border: 1px solid #94a3b8; border-radius: .8rem; padding: .9rem 1rem; font: inherit; }
+    .field-row input:focus { outline: 3px solid rgba(29,78,216,.2); border-color: #1d4ed8; }
+    .form-help { margin: .65rem 0 0; color: #475569; font-size: .94rem; }
+    .gate-status { min-height: 1.5rem; margin: 1rem 0 0; font-weight: 650; }
+    .gate-status[data-kind='error'], .notice.error { color: #991b1b; }
+    .gate-status[data-kind='success'] { color: #166534; }
+    .notice { margin-bottom: 1rem; padding: .9rem 1rem; border-radius: .75rem; background: #fef2f2; }
+    .pricing-content { margin-top: 3rem; }
+    .pricing-heading-row { display: flex; gap: 1rem; align-items: end; justify-content: space-between; }
+    .text-button { appearance: none; border: 0; background: transparent; color: #1d4ed8; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+    .tier-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .tier-card { padding: 1.4rem; border: 1px solid #cbd5e1; border-radius: 1.1rem; background: #fff; }
+    .tier-card h3 { margin: .25rem 0; font-size: 1.45rem; }
+    .tier-code { margin: 0; color: #1d4ed8; font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
+    .tier-price { margin: .6rem 0; font-size: clamp(1.6rem, 4vw, 2.35rem); font-weight: 850; letter-spacing: -.04em; }
+    .tier-meta { min-height: 4.2rem; color: #334155; font-weight: 650; }
+    .tier-card ul { padding-left: 1.2rem; color: #334155; }
+    .tier-card li + li { margin-top: .45rem; }
+    .price-notes { max-width: 60rem; margin-top: 2rem; padding: 1.25rem; border-radius: 1rem; background: #eaf4ff; }
+    @media (max-width: 820px) { .tier-grid { grid-template-columns: 1fr; } .pricing-heading-row, .field-row { align-items: stretch; flex-direction: column; } .tier-meta { min-height: 0; } }
+  </style>
+</BaseLayout>
