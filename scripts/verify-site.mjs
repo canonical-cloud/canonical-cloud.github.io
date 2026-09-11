@@ -11,7 +11,7 @@ for (const marker of ['Canonical Cloud', '<header', '<footer', 'Log in', 'Sign u
 if (/jekyll|hugo/i.test(home)) throw new Error('legacy generator marker found in built site');
 
 const prices = await readFile(join(root, 'dist/prices/index.html'), 'utf8');
-for (const marker of ['Work email', 'One-time code', 'Email me a code', '/auth/v1/otp', '/auth/v1/verify', 'canonical-prices']) {
+for (const marker of ['Work email', 'One-time code', 'Email me a code', '/auth/v1/otp', '/auth/v1/verify', 'data-prices-function-url']) {
   if (!prices.includes(marker)) throw new Error(`missing prices gate marker: ${marker}`);
 }
 for (const leakedPrice of ['$4,000/month', '$8,000/month', '$12,000/month']) {
