@@ -27,9 +27,28 @@ jobs:
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm test
+      - name: Require approved public pricing-auth configuration
+        shell: bash
+        env:
+          CANONICAL_SUPABASE_URL: ${{ vars.CANONICAL_SUPABASE_URL }}
+          CANONICAL_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CANONICAL_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$CANONICAL_SUPABASE_URL"
+          test -n "$CANONICAL_SUPABASE_PUBLISHABLE_KEY"
+          case "$CANONICAL_SUPABASE_PUBLISHABLE_KEY" in
+            sb_publishable_*|eyJ*) ;;
+            *) echo 'CANONICAL_SUPABASE_PUBLISHABLE_KEY must be a Supabase publishable/legacy anon key, never a secret/service-role key' >&2; exit 1 ;;
+          esac
+          case "$CANONICAL_SUPABASE_PUBLISHABLE_KEY" in
+            sb_secret_*|*service_role*) echo 'secret/service-role keys must never be exposed to the public site' >&2; exit 1 ;;
+          esac
       - run: npm run build
         env:
           PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io
+          PUBLIC_SUPABASE_URL: ${{ vars.CANONICAL_SUPABASE_URL }}
+          PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CANONICAL_SUPABASE_PUBLISHABLE_KEY }}
+          PUBLIC_CANONICAL_PRICING_FUNCTION: canonical-prices
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
