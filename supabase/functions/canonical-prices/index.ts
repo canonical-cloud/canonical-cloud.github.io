@@ -1,5 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
+declare const Deno: {
+  env: { get(name: string): string | undefined };
+  serve(handler: (req: Request) => Response | Promise<Response>): void;
+};
+
 const ALLOWED_ORIGINS = new Set([
   "https://canonical.plus",
   "https://canonical-cloud.github.io",
