@@ -27,3 +27,8 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm test
       - run: npm run build
+        env:
+          PUBLIC_SITE_URL: https://canonical-cloud.github.io
+          PUBLIC_SUPABASE_URL: https://example-project.supabase.co
+          PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_fixture_not_a_real_key
+          PUBLIC_CANONICAL_PRICING_FUNCTION: canonical-prices
