@@ -12,10 +12,12 @@ if (!home.includes('href="/prices/"')) throw new Error('home navigation does not
 if (/jekyll|hugo/i.test(home)) throw new Error('legacy generator marker found in built site');
 
 const prices = await readFile(join(root, 'dist/prices/index.html'), 'utf8');
-for (const marker of ['Send a one-time code', 'Enter the code', 'Verify and view pricing', 'canonical-prices']) {
+for (const marker of ['Send a one-time code', 'Enter the code', 'Verify and view pricing', 'canonical-prices', 'id="sow-grid"', 'id="support-body"']) {
   if (!prices.includes(marker)) throw new Error(`missing prices gate marker: ${marker}`);
 }
-for (const forbidden of ['$2,500', '$7,500', '$20,000', 'monthlyFeeUsd:2500', 'monthlyFeeUsd:7500', 'monthlyFeeUsd:20000']) {
+const catalog = JSON.parse(await readFile(join(root, 'src/data/service-tiers.json'), 'utf8'));
+const forbiddenAmounts = catalog.tiers.flatMap((t) => [`$${t.monthlyPriceUsd.toLocaleString('en-US')}`, `monthlyPriceUsd":${t.monthlyPriceUsd}`, `monthlyPriceUsd: ${t.monthlyPriceUsd}`]);
+for (const forbidden of forbiddenAmounts) {
   if (prices.includes(forbidden)) throw new Error(`static prices page leaked gated amount: ${forbidden}`);
 }
 if (!prices.includes('/auth/v1/otp') || !prices.includes('/auth/v1/verify')) {

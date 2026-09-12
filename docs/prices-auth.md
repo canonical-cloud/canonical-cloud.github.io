@@ -47,3 +47,14 @@ The Auth email template must contain the OTP token variable so passwordless emai
 - the generated static HTML does not contain the three gated dollar amounts.
 
 A complete production verification additionally requires an approved Supabase Auth project/email-template configuration and a real email OTP/browser flow after the repository variables are installed.
+
+## Catalog source
+
+The function's payload (`supabase/functions/canonical-prices/catalog.json`) is a
+byte-for-byte copy of `src/data/service-tiers.json`, which is synced from the
+governed catalog in `canonical-cloud/canonical-docs` (`data/legal/service-tiers.json`
+— TypeSpec + JSON Schema peer authorities under `contracts/`). Tiers, prices,
+terms, support targets and bundled SOW packages change there and only there;
+`node scripts/sync-prices-function.mjs --check` (part of `npm test`) proves the
+function payload is current, and the page rejects any response that is not a
+three-tier catalog with `schemaVersion`.

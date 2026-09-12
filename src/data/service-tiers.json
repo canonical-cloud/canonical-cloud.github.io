@@ -1,0 +1,221 @@
+{
+  "schemaVersion": "1.0",
+  "catalogVersion": "1.1.0",
+  "effectiveDate": "2026-09-12",
+  "owner": "Canonical Cloud, Inc.",
+  "currency": "USD",
+  "pricingBasis": "planning",
+  "publicPricesPage": "https://canonical-cloud.github.io/prices/",
+  "sourceRepository": "canonical-cloud/canonical-docs",
+  "sourcePath": "data/legal/service-tiers.json",
+  "nonReliance": [
+    "Prices are 2026 planning/list figures in U.S. dollars, validated through paid engagements; a signed Order Form or Statement of Work is the only source of a price obligation.",
+    "A price on this page or in this file is not an offer; the Order Form or Statement of Work controls.",
+    "Canonical Cloud does not issue SOC reports, ISO certificates, FedRAMP authorizations, PCI attestations, or other independent assurance."
+  ],
+  "supportTiers": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "coverage": "Business hours (09:00-18:00 Customer local time, Mon-Fri, excluding holidays)",
+      "initialResponse": {
+        "p1": "4 business hours",
+        "p2": "1 business day",
+        "p3": "3 business days"
+      }
+    },
+    {
+      "id": "priority",
+      "name": "Priority",
+      "coverage": "24x5",
+      "initialResponse": {
+        "p1": "1 hour",
+        "p2": "4 business hours",
+        "p3": "2 business days"
+      }
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "coverage": "24x7 for P1",
+      "initialResponse": {
+        "p1": "30 minutes",
+        "p2": "2 hours",
+        "p3": "1 business day"
+      }
+    }
+  ],
+  "tiers": [
+    {
+      "id": "foundation",
+      "name": "Foundation",
+      "rank": 1,
+      "tagline": "Managed readiness for one framework, with the Compliance Workspace and a monthly operating cadence.",
+      "audience": "Startups and small teams preparing for a first SOC 2 Type I or an internal readiness review, who want a named readiness lead from day one.",
+      "monthlyPriceUsd": 4000,
+      "annualPriceUsd": 43200,
+      "minimumTermMonths": 6,
+      "supportTierId": "standard",
+      "availabilityCommitmentPercent": 99.5,
+      "includedFrameworks": 1,
+      "includedSeats": 10,
+      "includedConnectors": 5,
+      "managedOperationsHoursPerMonth": 6,
+      "evidenceRetentionMonths": 12,
+      "sowPackageId": "sow-readiness-diagnostic",
+      "features": [
+        "Canonical Compliance Workspace with a readiness map for one framework, control owners, and evidence links",
+        "Control-owner and evidence-calendar administration",
+        "Six hours per month of managed compliance operations: monthly evidence-freshness and exception review, monthly risk and remediation working session",
+        "Up to five read-only evidence connectors with signed observation intake",
+        "Standard exports for customer and independent-evaluator review",
+        "Standard support and the published Service Level Objectives"
+      ],
+      "notIncluded": [
+        "Executive (vCISO) cadence and board reporting",
+        "Independent evaluator coordination beyond standard exports",
+        "Custom data-processing terms"
+      ]
+    },
+    {
+      "id": "growth",
+      "name": "Growth",
+      "rank": 2,
+      "tagline": "Managed compliance operations across two frameworks with a biweekly operating rhythm.",
+      "audience": "Scaling companies carrying SOC 2 Type II plus one adjacent framework.",
+      "monthlyPriceUsd": 8000,
+      "annualPriceUsd": 86400,
+      "minimumTermMonths": 6,
+      "supportTierId": "priority",
+      "availabilityCommitmentPercent": 99.9,
+      "includedFrameworks": 2,
+      "includedSeats": 25,
+      "includedConnectors": 15,
+      "managedOperationsHoursPerMonth": 12,
+      "evidenceRetentionMonths": 36,
+      "sowPackageId": "sow-soc2-readiness-implementation",
+      "features": [
+        "Everything in Foundation",
+        "Up to two active frameworks with shared-control reuse",
+        "Twelve hours per month of managed compliance operations: biweekly evidence, remediation, risk, and owner review",
+        "Quarterly executive security and compliance review",
+        "Expanded customer-questionnaire and independent-evaluator coordination under the coordination agreement",
+        "Prioritized connector and evidence-source onboarding",
+        "Priority support with a 99.9% availability commitment"
+      ],
+      "notIncluded": [
+        "Weekly operating review and vCISO cadence",
+        "FedRAMP or other authorization programs"
+      ]
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "rank": 3,
+      "tagline": "Multi-framework programs with a weekly operating review, executive cadence, and 24x7 critical support.",
+      "audience": "Organizations running up to four frameworks together (SOC 2, ISO 27001, HIPAA, GDPR, NIST), or preparing for an authorization program.",
+      "monthlyPriceUsd": 12000,
+      "annualPriceUsd": 129600,
+      "minimumTermMonths": 12,
+      "supportTierId": "enterprise",
+      "availabilityCommitmentPercent": 99.9,
+      "includedFrameworks": 4,
+      "includedSeats": 100,
+      "includedConnectors": 50,
+      "managedOperationsHoursPerMonth": 20,
+      "evidenceRetentionMonths": 84,
+      "sowPackageId": "sow-multi-framework-program",
+      "features": [
+        "Everything in Growth",
+        "Up to four active frameworks with multi-framework control reuse and framework-specific review",
+        "Twenty hours per month of managed compliance operations: weekly operating review plus a monthly executive / vCISO-style review with roadmap, risk register, and board pack",
+        "Bounded audit and readiness-room coordination with the independent evaluator",
+        "Quarterly operating-model and evidence-quality assessment",
+        "24x7 first response for P1 incidents",
+        "Custom data-processing and security addenda negotiated under the MSA",
+        "Dedicated onboarding and offboarding plan with data-return attestation"
+      ],
+      "notIncluded": [
+        "Third-party assessor, certification-body, QSA, or 3PAO fees",
+        "Any audit opinion, certificate, attestation, or authorization"
+      ]
+    }
+  ],
+  "sowPackages": [
+    {
+      "id": "sow-readiness-diagnostic",
+      "tierId": "foundation",
+      "name": "Readiness Diagnostic",
+      "summary": "A fixed-scope, fixed-fee diagnostic that produces a gap register, an owner map, and a phased remediation plan for one framework.",
+      "fixedFeeUsd": 5000,
+      "durationWeeks": 2,
+      "deliverables": [
+        "Scoping memo naming the framework, criteria, systems, and people in scope",
+        "Gap register with severity, owner, and recommended remediation",
+        "Evidence inventory mapped to controls in the Compliance Workspace",
+        "Phased remediation plan with effort estimates and dependencies",
+        "Readout session and written summary"
+      ],
+      "assumptions": [
+        "Customer provides a single accountable sponsor and access to the in-scope systems within five business days of the effective date",
+        "Interviews are scheduled within the first week",
+        "Findings are limited to the framework and systems named in the scoping memo"
+      ],
+      "outOfScope": [
+        "Remediation work, policy drafting, and tool configuration",
+        "Any audit, attestation, certification, or authorization",
+        "Systems, entities, or frameworks not named in the scoping memo"
+      ]
+    },
+    {
+      "id": "sow-soc2-readiness-implementation",
+      "tierId": "growth",
+      "name": "SOC 2 Readiness Implementation",
+      "summary": "A fixed-fee implementation that takes a diagnosed gap register to evidence-backed readiness for a SOC 2 examination period.",
+      "fixedFeeUsd": 18000,
+      "durationWeeks": 8,
+      "deliverables": [
+        "Control narratives and policy set aligned to the selected Trust Services Criteria",
+        "Configured evidence connectors and observation routing",
+        "Remediation tracking with weekly status and burn-down",
+        "Evidence package organized for handoff to the independent evaluator",
+        "Examination-period readiness checklist and cutover plan"
+      ],
+      "assumptions": [
+        "A Readiness Diagnostic or equivalent gap register exists before the start date",
+        "Customer engineering owners are available for a weekly working session",
+        "The independent evaluator is contracted directly by Customer"
+      ],
+      "outOfScope": [
+        "The SOC 2 examination itself and any opinion or report",
+        "Penetration testing and vulnerability assessment services",
+        "Frameworks beyond SOC 2 unless added by change order"
+      ]
+    },
+    {
+      "id": "sow-multi-framework-program",
+      "tierId": "scale",
+      "name": "Multi-Framework Readiness Program",
+      "summary": "A program-level engagement that unifies controls, evidence, and owners across several frameworks while preserving framework-specific reviews.",
+      "fixedFeeUsd": 45000,
+      "durationWeeks": 12,
+      "deliverables": [
+        "Unified control library with framework crosswalk and isolation rules",
+        "Program charter, RACI, and executive reporting cadence",
+        "Evidence architecture across connectors, observations, and retention classes",
+        "Framework-specific readiness checklists and evaluator handoff packages",
+        "Transition plan into managed compliance operations"
+      ],
+      "assumptions": [
+        "Executive sponsor and program manager are named before kickoff",
+        "Frameworks in scope are fixed in the scoping memo; additions are change orders",
+        "Authorization programs such as FedRAMP are scoped and priced separately"
+      ],
+      "outOfScope": [
+        "Assessor, certification-body, QSA, and 3PAO fees and their opinions",
+        "Authorization packages priced under a separate Statement of Work",
+        "Staff augmentation beyond the managed-operations allowance"
+      ]
+    }
+  ]
+}

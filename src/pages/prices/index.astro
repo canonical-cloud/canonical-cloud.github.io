@@ -15,8 +15,9 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
       <p class="eyebrow">Service pricing</p>
       <h1>Verify your email to view the current proposed service tiers.</h1>
       <p class="lede">
-        Pricing is intentionally separated from the public marketing page. The authenticated catalog contains
-        proposed starting prices for managed readiness and assurance engineering; a signed Statement of Work
+        Pricing is intentionally separated from the public marketing page. The authenticated catalog is the
+        same governed data our Service Level Agreement, support addendum and Statement of Work packages are
+        rendered from — three tiers, three price points, one source; a signed Statement of Work or Order Form
         controls actual scope, fees, term, and billing.
       </p>
     </div>
@@ -34,8 +35,9 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
         <input id="price-email" name="email" type="email" autocomplete="email" required />
         <button class="button" type="submit">Email me a code</button>
         <p class="fine-print">
-          Supabase Auth sends the sign-in message. The project email template must use the OTP token form rather
-          than a magic link. Requests are subject to the project’s authentication rate limits.
+          Supabase Auth sends the sign-in message; no password is created and nothing else is stored on this site.
+          The project email template must use the OTP token form rather than a magic link. Requests are subject to
+          the project’s authentication rate limits.
         </p>
       </form>
 
@@ -62,6 +64,12 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
       </p>
     </div>
     <div id="price-grid" class="price-grid"></div>
+    <div class="section-heading sub"><p class="eyebrow">Statement of Work packages</p><h2>Fixed scope, fixed fee, written down before we start.</h2></div>
+    <div id="sow-grid" class="price-grid"></div>
+    <div class="section-heading sub"><p class="eyebrow">Support targets</p><h2>The same table your SLA uses.</h2></div>
+    <div class="table-wrap"><table class="support-table"><thead><tr><th>Tier</th><th>Coverage</th><th>P1 first response</th><th>P2</th><th>P3</th></tr></thead><tbody id="support-body"></tbody></table></div>
+    <ul id="non-reliance" class="non-reliance"></ul>
+    <p id="provenance" class="fine-print"></p>
   </section>
 
   <noscript>
@@ -77,6 +85,10 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
     const changeEmail = document.querySelector('#change-email');
     const content = document.querySelector('#pricing-content');
     const grid = document.querySelector('#price-grid');
+    const sowGrid = document.querySelector('#sow-grid');
+    const supportBody = document.querySelector('#support-body');
+    const nonReliance = document.querySelector('#non-reliance');
+    const provenance = document.querySelector('#provenance');
     const configError = document.querySelector('#configuration-error');
     let pendingEmail = '';
 
@@ -103,37 +115,61 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
       return body;
     };
 
+    const usd = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+    const el = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
+    const list = (tag, items) => { const node = document.createElement(tag); for (const item of items) node.append(el('li', '', String(item))); return node; };
+
+    // The function returns the governed ServiceTierCatalog from
+    // canonical-cloud/canonical-docs (data/legal/service-tiers.json): the same
+    // data the SLA, support addendum, SOW package menu and pricing schedule
+    // are rendered from. Anything that does not look like it is rejected.
     const renderPricing = (catalog) => {
-      if (!catalog || catalog.schema !== 'canonical-cloud.service-tier-catalog/v1' || !Array.isArray(catalog.tiers)) {
+      if (!catalog || typeof catalog.schemaVersion !== 'string' || !Array.isArray(catalog.tiers) || catalog.tiers.length < 3) {
         throw new Error('pricing_contract_mismatch');
       }
+      const support = new Map((catalog.supportTiers ?? []).map((s) => [s.id, s]));
+      const sows = new Map((catalog.sowPackages ?? []).map((s) => [s.id, s]));
       grid.replaceChildren();
       for (const tier of catalog.tiers) {
-        if (!tier || typeof tier.name !== 'string' || !Number.isFinite(tier.monthlyFeeUsd)) {
+        if (!tier || typeof tier.name !== 'string' || !Number.isFinite(tier.monthlyPriceUsd)) {
           throw new Error('pricing_tier_invalid');
         }
-        const card = document.createElement('article');
-        card.className = 'price-card';
-
-        const name = document.createElement('h3');
-        name.textContent = tier.name;
-        const price = document.createElement('p');
-        price.className = 'price';
-        price.textContent = `${new Intl.NumberFormat('en-US', { style: 'currency', currency: catalog.currency ?? 'USD', maximumFractionDigits: 0 }).format(tier.monthlyFeeUsd)} / month`;
-        const scope = document.createElement('p');
-        scope.textContent = tier.frameworkScope ?? '';
-        const cadence = document.createElement('p');
-        cadence.className = 'cadence';
-        cadence.textContent = tier.operatingCadence ?? '';
-        const list = document.createElement('ul');
-        for (const feature of Array.isArray(tier.features) ? tier.features : []) {
-          const item = document.createElement('li');
-          item.textContent = String(feature);
-          list.append(item);
-        }
-        card.append(name, price, scope, cadence, list);
+        const card = el('article', 'price-card');
+        card.append(el('p', 'step', `Tier ${tier.rank ?? ''}`), el('h3', '', tier.name), el('p', 'tagline', tier.tagline ?? ''));
+        card.append(el('p', 'price', `${usd(tier.monthlyPriceUsd)} / month`));
+        if (Number.isFinite(tier.annualPriceUsd)) card.append(el('p', 'price-alt', `${usd(tier.annualPriceUsd)} / year paid annually · ${tier.minimumTermMonths}-month minimum`));
+        const facts = el('dl', 'tier-facts');
+        const s = support.get(tier.supportTierId);
+        for (const [k, v] of [
+          ['Support', s ? `${s.name} — ${s.coverage}` : '—'],
+          ['Availability commitment', `${tier.availabilityCommitmentPercent}% per month`],
+          ['Frameworks', tier.includedFrameworks],
+          ['Seats', tier.includedSeats],
+          ['Evidence connectors', tier.includedConnectors],
+          ['Managed operations', tier.managedOperationsHoursPerMonth ? `${tier.managedOperationsHoursPerMonth} hours / month` : 'Not included'],
+          ['Evidence retention', `${tier.evidenceRetentionMonths} months`],
+        ]) { const row = el('div'); row.append(el('dt', '', k), el('dd', '', String(v))); facts.append(row); }
+        card.append(facts, el('p', 'cadence', tier.audience ?? ''), list('ul', tier.features ?? []));
+        if (Array.isArray(tier.notIncluded) && tier.notIncluded.length) card.append(el('p', 'fine-print', `Not included: ${tier.notIncluded.join('; ')}.`));
+        const sow = sows.get(tier.sowPackageId);
+        if (sow) card.append(el('p', 'fine-print', `Bundled package: ${sow.name} — ${usd(sow.fixedFeeUsd)} fixed, ${sow.durationWeeks} weeks`));
         grid.append(card);
       }
+      sowGrid.replaceChildren();
+      for (const sow of catalog.sowPackages ?? []) {
+        const card = el('article', 'price-card');
+        card.append(el('p', 'step', sow.id), el('h3', '', sow.name), el('p', 'price-alt', `${usd(sow.fixedFeeUsd)} fixed · ${sow.durationWeeks} weeks`), el('p', '', sow.summary ?? ''));
+        card.append(el('strong', '', 'Deliverables'), list('ol', sow.deliverables ?? []), el('strong', '', 'Out of scope'), list('ul', sow.outOfScope ?? []));
+        sowGrid.append(card);
+      }
+      supportBody.replaceChildren();
+      for (const s of catalog.supportTiers ?? []) {
+        const row = el('tr');
+        for (const v of [s.name, s.coverage, s.initialResponse?.p1, s.initialResponse?.p2, s.initialResponse?.p3]) row.append(el('td', '', String(v ?? '')));
+        supportBody.append(row);
+      }
+      nonReliance.replaceChildren(...(catalog.nonReliance ?? []).map((line) => el('li', '', String(line))));
+      provenance.textContent = catalog.sourcePath ? `Catalog ${catalog.catalogVersion ?? ''}, effective ${catalog.effectiveDate ?? ''}, from ${catalog.sourcePath} in ${catalog.sourceRepository ?? ''}. Assessor, certification-body, QSA and 3PAO fees are contracted and paid by you directly.` : '';
       content.hidden = false;
       emailForm.hidden = true;
       otpForm.hidden = true;
@@ -223,5 +259,14 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
   .price { font-size: 1.55rem; font-weight: 850; letter-spacing: -.03em; color: var(--accent); }
   .cadence { font-weight: 650; }
   .price-card li { margin-bottom: .6rem; line-height: 1.45; }
+  .price-alt, .tagline { margin: 0; opacity: .72; font-size: .92rem; }
+  .tier-facts { display: grid; gap: .35rem; margin: .8rem 0; padding: .8rem 0; border-block: 1px solid rgba(7,19,38,.12); font-size: .9rem; }
+  .tier-facts div { display: flex; justify-content: space-between; gap: 1rem; }
+  .tier-facts dt { opacity: .7; } .tier-facts dd { margin: 0; text-align: right; font-weight: 700; }
+  .section-heading.sub { margin-top: 3rem; }
+  .table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+  .support-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .support-table th, .support-table td { padding: .7rem .8rem; border-bottom: 1px solid rgba(7,19,38,.12); text-align: left; vertical-align: top; }
+  .non-reliance { margin: 2rem 0 0; padding-left: 1.1rem; line-height: 1.6; opacity: .8; }
   @media (max-width: 820px) { .price-hero, .price-grid { grid-template-columns: 1fr; } .price-hero { gap: 2rem; padding-top: 4rem; } }
 </style>
