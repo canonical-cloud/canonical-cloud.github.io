@@ -1,0 +1,287 @@
+---
+// /prices/ — a real route (not an anchor on the home page). The tier data is
+// the same governed catalog the legal corpus renders from
+// (canonical-cloud/canonical-docs: data/legal/service-tiers.json, synced by
+// `python3 scripts/render_legal_data.py --site-dir <this checkout>`).
+//
+// Access gate: the visitor enters an email, Supabase Auth emails a one-time
+// code, and the page unlocks when the visitor enters the code. For now the
+// accepted code is the build-time PUBLIC_PRICES_OTP (a soft gate — it is
+// inlined into this page's script, so it deters casual browsing and captures
+// a lead; it is not access control). A code Supabase itself issued is also
+// accepted when Supabase is configured, which is the upgrade path.
+//
+// Only this page reads the PUBLIC_SUPABASE_* / PUBLIC_PRICES_OTP variables and
+// talks to Supabase; the home page and every other route stay free of it.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { site } from '../../data/site';
+import catalog from '../../data/service-tiers.json';
+
+const supportById = Object.fromEntries(catalog.supportTiers.map((t) => [t.id, t]));
+const sowById = Object.fromEntries(catalog.sowPackages.map((s) => [s.id, s]));
+const usd = (n: number) => `$${n.toLocaleString('en-US')}`;
+const gateConfigured = Boolean(import.meta.env.PUBLIC_PRICES_OTP);
+const emailConfigured = Boolean(import.meta.env.PUBLIC_CANONICAL_SUPABASE_URL && import.meta.env.PUBLIC_CANONICAL_SUPABASE_PUBLISHABLE_KEY);
+---
+<BaseLayout title={`Pricing — Canonical Cloud`} description={`Canonical Cloud service tiers and pricing. Enter your email and the one-time code we send you to view the current schedule.`}>
+  <section class="page-hero shell">
+    <p class="eyebrow">Pricing</p>
+    <h1>Three tiers. One data source.</h1>
+    <p>Every price on this page is rendered from the same governed catalog that our Service Level Agreement, support addendum, and Statement of Work packages are rendered from — catalog <code>{catalog.catalogVersion}</code>, effective {catalog.effectiveDate}. Enter your work email and we will send a one-time code to unlock the schedule.</p>
+  </section>
+
+  <section class="shell prices-gate" id="prices-gate" data-gate-configured={String(gateConfigured)} data-email-configured={String(emailConfigured)}>
+    <form id="email-form" class="gate-card" novalidate>
+      <p class="eyebrow">Step 1 of 2</p>
+      <h2>Where should we send the code?</h2>
+      <label for="email">Work email</label>
+      <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@company.com" required />
+      <button class="button" type="submit">Send one-time code</button>
+      <p class="gate-note">We use the address to deliver the code and to follow up about pricing. No password is created and nothing else is stored on this site.</p>
+      <p class="gate-status" id="email-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <form id="code-form" class="gate-card" hidden novalidate>
+      <p class="eyebrow">Step 2 of 2</p>
+      <h2>Enter the code from your email</h2>
+      <label for="code">One-time code</label>
+      <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9A-Za-z-]{4,12}" placeholder="123456" required />
+      <div class="actions">
+        <button class="button" type="submit">Unlock pricing</button>
+        <button class="button secondary" type="button" id="resend">Use a different email</button>
+      </div>
+      <p class="gate-status" id="code-status" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <template id="prices-content">
+    <section class="section shell prices">
+      <div class="section-heading">
+        <p class="eyebrow">Service tiers</p>
+        <h2>Pick the tier that matches the program you are running.</h2>
+        <p>Prices are {catalog.pricingBasis} figures in {catalog.currency}. The Order Form or Statement of Work you sign controls; this page is not an offer.</p>
+      </div>
+      <div class="tier-grid">
+        {catalog.tiers.map((tier) => (
+          <article class={`tier tier-${tier.id}`}>
+            <p class="eyebrow">Tier {tier.rank}</p>
+            <h3>{tier.name}</h3>
+            <p class="tagline">{tier.tagline}</p>
+            <p class="price"><strong>{usd(tier.monthlyPriceUsd)}</strong><span>/ month</span></p>
+            <p class="price-alt">{usd(tier.annualPriceUsd)} / year paid annually · {tier.minimumTermMonths}-month minimum</p>
+            <dl class="tier-facts">
+              <div><dt>Support</dt><dd>{supportById[tier.supportTierId].name} — {supportById[tier.supportTierId].coverage}</dd></div>
+              <div><dt>Availability commitment</dt><dd>{tier.availabilityCommitmentPercent}% per month</dd></div>
+              <div><dt>Frameworks</dt><dd>{tier.includedFrameworks}</dd></div>
+              <div><dt>Seats</dt><dd>{tier.includedSeats}</dd></div>
+              <div><dt>Evidence connectors</dt><dd>{tier.includedConnectors}</dd></div>
+              <div><dt>Managed operations</dt><dd>{tier.managedOperationsHoursPerMonth === 0 ? 'Not included' : `${tier.managedOperationsHoursPerMonth} hours / month`}</dd></div>
+              <div><dt>Evidence retention</dt><dd>{tier.evidenceRetentionMonths} months</dd></div>
+            </dl>
+            <p class="audience">{tier.audience}</p>
+            <ul class="features">{tier.features.map((f) => <li>{f}</li>)}</ul>
+            {tier.notIncluded.length > 0 && <p class="not-included"><strong>Not included:</strong> {tier.notIncluded.join('; ')}.</p>}
+            <p class="bundle"><strong>Bundled package:</strong> {sowById[tier.sowPackageId].name} — {usd(sowById[tier.sowPackageId].fixedFeeUsd)} fixed, {sowById[tier.sowPackageId].durationWeeks} weeks</p>
+            <a class="button" href={site.authUrl}>Talk to us about {tier.name}</a>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="section shell prices">
+      <div class="section-heading">
+        <p class="eyebrow">Statement of Work packages</p>
+        <h2>Fixed scope, fixed fee, written down before we start.</h2>
+      </div>
+      <div class="sow-grid">
+        {catalog.sowPackages.map((sow) => (
+          <article class="card sow">
+            <span>{sow.id}</span>
+            <h3>{sow.name}</h3>
+            <p class="price-alt">{usd(sow.fixedFeeUsd)} fixed · {sow.durationWeeks} weeks · bundled with {catalog.tiers.find((t) => t.id === sow.tierId)?.name}</p>
+            <p>{sow.summary}</p>
+            <strong>Deliverables</strong>
+            <ol>{sow.deliverables.map((d) => <li>{d}</li>)}</ol>
+            <strong>Out of scope</strong>
+            <ul>{sow.outOfScope.map((o) => <li>{o}</li>)}</ul>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="section shell prices">
+      <div class="section-heading">
+        <p class="eyebrow">Support targets</p>
+        <h2>The same table your SLA uses.</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="support-table">
+          <thead><tr><th>Tier</th><th>Coverage</th><th>P1 first response</th><th>P2</th><th>P3</th></tr></thead>
+          <tbody>
+            {catalog.supportTiers.map((t) => (
+              <tr><td>{t.name}</td><td>{t.coverage}</td><td>{t.initialResponse.p1}</td><td>{t.initialResponse.p2}</td><td>{t.initialResponse.p3}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul class="non-reliance">{catalog.nonReliance.map((line) => <li>{line}</li>)}</ul>
+      <p class="provenance">Source: <code>{catalog.sourcePath}</code> in <code>{catalog.sourceRepository}</code>. Assessor, certification-body, QSA, and 3PAO fees are always contracted and paid by you directly.</p>
+    </section>
+  </template>
+
+  <div id="prices-mount"></div>
+</BaseLayout>
+
+<script>
+  // Client-side gate. `import.meta.env.PUBLIC_*` values are inlined at build
+  // time by Astro/Vite from the GitHub Actions variables and secrets wired in
+  // .github/workflows/pages.yml. Nothing here is imported by any other page.
+  const SUPABASE_URL: string = (import.meta.env.PUBLIC_CANONICAL_SUPABASE_URL ?? '').replace(/\/+$/, '');
+  const SUPABASE_PUBLISHABLE_KEY: string = import.meta.env.PUBLIC_CANONICAL_SUPABASE_PUBLISHABLE_KEY ?? '';
+  const ACCEPTED_OTP: string = import.meta.env.PUBLIC_PRICES_OTP ?? '';
+  const SESSION_KEY = 'canonical.prices.unlocked';
+
+  const gate = document.getElementById('prices-gate') as HTMLElement;
+  const emailForm = document.getElementById('email-form') as HTMLFormElement;
+  const codeForm = document.getElementById('code-form') as HTMLFormElement;
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const codeInput = document.getElementById('code') as HTMLInputElement;
+  const emailStatus = document.getElementById('email-status') as HTMLElement;
+  const codeStatus = document.getElementById('code-status') as HTMLElement;
+  const resend = document.getElementById('resend') as HTMLButtonElement;
+  const template = document.getElementById('prices-content') as HTMLTemplateElement;
+  const mount = document.getElementById('prices-mount') as HTMLElement;
+
+  const supabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+  let email = '';
+
+  function reveal(): void {
+    if (mount.childElementCount === 0) mount.appendChild(template.content.cloneNode(true));
+    gate.hidden = true;
+    mount.querySelector('h2')?.scrollIntoView({ block: 'start' });
+  }
+
+  function remember(): void {
+    try { sessionStorage.setItem(SESSION_KEY, email); } catch { /* storage unavailable: unlock lasts for this view only */ }
+  }
+
+  function restored(): boolean {
+    try { return Boolean(sessionStorage.getItem(SESSION_KEY)); } catch { return false; }
+  }
+
+  async function supabase(path: string, body: unknown): Promise<Response> {
+    return fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function sendCode(address: string): Promise<string> {
+    if (!supabaseConfigured) {
+      return 'Email delivery is not configured for this deployment. Use the access code from your Canonical Cloud contact.';
+    }
+    try {
+      const res = await supabase('otp', { email: address, create_user: true, data: { source: 'canonical-cloud.github.io/prices' } });
+      if (res.ok) return `We sent a one-time code to ${address}. It can take a minute to arrive.`;
+      const detail = await res.json().catch(() => ({}));
+      return `We could not send the code (${detail.msg ?? detail.error_description ?? detail.message ?? res.status}). Use the access code from your Canonical Cloud contact, or try again shortly.`;
+    } catch {
+      return 'We could not reach the email service. Use the access code from your Canonical Cloud contact, or try again shortly.';
+    }
+  }
+
+  async function verifyWithSupabase(address: string, token: string): Promise<boolean> {
+    if (!supabaseConfigured) return false;
+    try {
+      const res = await supabase('verify', { type: 'email', email: address, token });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  emailForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const value = emailInput.value.trim();
+    if (!emailInput.checkValidity() || !value.includes('@')) {
+      emailStatus.textContent = 'Enter a valid email address.';
+      emailInput.focus();
+      return;
+    }
+    email = value;
+    emailStatus.textContent = 'Sending…';
+    const message = await sendCode(email);
+    emailForm.hidden = true;
+    codeForm.hidden = false;
+    codeStatus.textContent = message;
+    codeInput.focus();
+  });
+
+  codeForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const token = codeInput.value.trim();
+    if (!token) { codeStatus.textContent = 'Enter the code from the email.'; codeInput.focus(); return; }
+    codeStatus.textContent = 'Checking…';
+    const accepted = (ACCEPTED_OTP !== '' && token === ACCEPTED_OTP) || (await verifyWithSupabase(email, token));
+    if (!accepted) {
+      codeStatus.textContent = ACCEPTED_OTP === '' && !supabaseConfigured
+        ? 'Pricing access is not configured for this deployment.'
+        : 'That code did not match. Check the email and try again.';
+      codeInput.select();
+      return;
+    }
+    remember();
+    reveal();
+  });
+
+  resend.addEventListener('click', () => {
+    codeForm.hidden = true;
+    emailForm.hidden = false;
+    codeInput.value = '';
+    emailStatus.textContent = '';
+    emailInput.focus();
+  });
+
+  if (restored()) reveal();
+</script>
+
+<style>
+  .prices-gate{padding:0 0 6rem}
+  .gate-card{display:grid;gap:.8rem;max-width:34rem;padding:clamp(1.4rem,4vw,2.4rem);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:1.3rem;background:color-mix(in srgb,var(--paper) 72%,white);box-shadow:0 18px 48px color-mix(in srgb,var(--ink) 7%,transparent)}
+  .gate-card h2{margin:0;font:800 clamp(1.5rem,3vw,2.2rem)/1.05 'Manrope',sans-serif;letter-spacing:-.04em}
+  .gate-card label{font-weight:700;font-size:.9rem}
+  .gate-card input{padding:.85rem 1rem;border:1px solid color-mix(in srgb,var(--ink) 25%,transparent);border-radius:.8rem;font:inherit;font-size:1.05rem}
+  .gate-card .actions{margin-top:0}
+  .gate-note{margin:0;color:color-mix(in srgb,var(--ink) 65%,transparent);font-size:.85rem;line-height:1.5}
+  .gate-status{min-height:1.4em;margin:0;font-size:.92rem;font-weight:600}
+  .prices .section-heading>p:last-child{color:color-mix(in srgb,var(--ink) 68%,transparent);line-height:1.6}
+  .tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:3rem}
+  .tier{display:grid;align-content:start;gap:.6rem;padding:1.6rem;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:1.3rem;background:color-mix(in srgb,var(--paper) 72%,white);box-shadow:0 18px 48px color-mix(in srgb,var(--ink) 7%,transparent)}
+  .tier-growth{border-color:var(--accent);box-shadow:0 22px 60px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .tier h3{margin:0;font:800 1.7rem/1.1 'Manrope',sans-serif;letter-spacing:-.04em}
+  .tier .tagline{margin:0;color:color-mix(in srgb,var(--ink) 68%,transparent);line-height:1.5}
+  .price{display:flex;align-items:baseline;gap:.4rem;margin:.6rem 0 0}
+  .price strong{font:800 2.6rem/1 'Manrope',sans-serif;letter-spacing:-.05em}
+  .price span,.price-alt{color:color-mix(in srgb,var(--ink) 62%,transparent);font-size:.9rem}
+  .price-alt{margin:0}
+  .tier-facts{display:grid;gap:.35rem;margin:.8rem 0 0;padding:.9rem 0;border-block:1px solid color-mix(in srgb,var(--ink) 12%,transparent);font-size:.9rem}
+  .tier-facts div{display:flex;justify-content:space-between;gap:1rem}
+  .tier-facts dt{color:color-mix(in srgb,var(--ink) 62%,transparent)}
+  .tier-facts dd{margin:0;text-align:right;font-weight:700}
+  .audience{margin:0;font-size:.9rem;line-height:1.5}
+  .features{margin:0;padding-left:1.1rem;font-size:.92rem;line-height:1.55}
+  .not-included,.bundle{margin:0;font-size:.85rem;line-height:1.5;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+  .tier .button{margin-top:.6rem}
+  .sow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:3rem}
+  .card.sow{min-height:auto;display:grid;align-content:start;gap:.5rem}
+  .card.sow h3{margin:1.4rem 0 0}
+  .card.sow ol,.card.sow ul{margin:0;padding-left:1.1rem;font-size:.9rem;line-height:1.5;color:color-mix(in srgb,var(--ink) 72%,transparent)}
+  .table-wrap{overflow-x:auto;margin-top:2.4rem}
+  .support-table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .support-table th,.support-table td{padding:.75rem .8rem;border-bottom:1px solid color-mix(in srgb,var(--ink) 12%,transparent);text-align:left;vertical-align:top}
+  .support-table th{font:800 .72rem/1.2 'Manrope',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  .non-reliance{margin:2rem 0 0;padding-left:1.1rem;color:color-mix(in srgb,var(--ink) 68%,transparent);line-height:1.6}
+  .provenance{color:color-mix(in srgb,var(--ink) 62%,transparent);font-size:.85rem}
+  @media(max-width:860px){.tier-grid,.sow-grid{grid-template-columns:1fr}}
+</style>
