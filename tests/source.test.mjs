@@ -16,6 +16,12 @@ test('prices is a real route linked from the header, footer, and sitemap', async
   const [header, footer, sitemap] = await Promise.all([read('src/components/Header.astro'), read('src/components/Footer.astro'), read('public/sitemap.xml')]);
   assert.match(header, /href="\/prices\/"/); assert.match(footer, /href="\/prices\/"/); assert.match(sitemap, /\/prices\/<\/loc>/);
 });
+test('people is a real route linked from the header, footer, and sitemap', async () => {
+  const [people, header, footer, sitemap] = await Promise.all([read('src/pages/people/index.astro'), read('src/components/Header.astro'), read('src/components/Footer.astro'), read('public/sitemap.xml')]);
+  assert.match(header, /href="\/people\/"/); assert.match(footer, /href="\/people\/"/); assert.match(sitemap, /\/people\/<\/loc>/);
+  assert.match(people, /Sam Stone/); assert.match(people, /Accounts & Sales/);
+  assert.match(people, /Cody Dyson/); assert.match(people, /Sales Engineer/);
+});
 test('the prices page authenticates with Supabase using built-in fetch and never inlines the catalog', async () => {
   const page = await read('src/pages/prices/index.astro');
   assert.match(page, /auth\/v1\/otp/); assert.match(page, /auth\/v1\/verify/); assert.match(page, /functions\/v1\//);
