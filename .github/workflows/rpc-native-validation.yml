@@ -61,5 +61,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/main.ores" > rpc-ci/actual.txt
+          if ! mvn -q -Dstyle.color=never -Dmaven.test.skip=true exec:java -Dexec.args="--platform=server rpc-ci/main.ores" > rpc-ci/actual.txt 2> rpc-ci/runtime.err; then
+            echo "=== RPC stdout before failure ==="
+            cat rpc-ci/actual.txt || true
+            echo "=== RPC stderr ==="
+            cat rpc-ci/runtime.err || true
+            exit 1
+          fi
           diff -u rpc-ci/expected.txt rpc-ci/actual.txt
