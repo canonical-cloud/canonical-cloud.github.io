@@ -31,10 +31,10 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/gha-indie-worker/gha-indie-worker-e2e.git rpc-mirror
           cd rpc-mirror
-          git checkout --quiet 2017010ba6aa1c8d4c0b878a29793d5efdfe0f5b
-          test "$(git rev-parse HEAD)" = "2017010ba6aa1c8d4c0b878a29793d5efdfe0f5b"
+          git checkout --quiet 90c88d7ada9d91c71538e0ca61d48fdcc7cec245
+          test "$(git rev-parse HEAD)" = "90c88d7ada9d91c71538e0ca61d48fdcc7cec245"
           grep -Fx "compiler_source=ores-truffle-oreslang/oreslang-source.java@3a41bed317060cc7cbab1c6be3a0ea92913c6fc9" rpc-ci/PROVENANCE.txt
-          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@5643819971aefbfb5948d1eeb3f8c4a76d64d9a8" rpc-ci/PROVENANCE.txt
+          grep -Fx "rpc_source=ores-truffle-oreslang/oreslang-rpc@8c99dbe25378bf4248423c2927cfb65a157eb280" rpc-ci/PROVENANCE.txt
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected" || {
