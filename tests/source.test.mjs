@@ -75,3 +75,18 @@ test('the tier catalog is the governed three-tier schedule and the function serv
   assert.equal(await read('supabase/functions/canonical-prices/catalog.json'), await read('src/data/service-tiers.json'));
   assert.match(await read('supabase/functions/canonical-prices/index.ts'), /import catalog from "\.\/catalog\.json"/);
 });
+
+test('Pages deployment permits only safe unconfigured pricing and the gate is hidden server-side', async () => {
+  const [workflow, prices] = await Promise.all([
+    read('.github/workflows/pages.yml'),
+    read('src/pages/prices/index.astro'),
+  ]);
+  assert.ok(workflow.includes('publishing marketing pages with pricing access disabled'));
+  assert.ok(workflow.includes('Pricing configuration must include both'));
+  assert.ok(workflow.includes('CANONICAL_SUPABASE_URL must be an approved'));
+  assert.ok(workflow.includes('sb_secret_*|*service_role*'));
+  assert.ok(prices.includes('id="configuration-error" class="gate-message error" hidden={configured}'));
+  assert.ok(prices.includes('id="email-form" class="gate-card" hidden={!configured}'));
+  assert.ok(prices.includes('if (!configured)'));
+  assert.ok(prices.includes('emailForm.hidden = true'));
+});

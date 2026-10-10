@@ -23,12 +23,12 @@ const configured = Boolean(supabaseUrl && supabaseKey && priceFunction);
     </div>
 
     <div class="price-gate" data-configured={configured ? 'true' : 'false'}>
-      <div id="configuration-error" class="gate-message error" hidden>
+      <div id="configuration-error" class="gate-message error" hidden={configured}>
         Pricing access is not configured for this deployment. The build must provide the approved public
         Supabase URL and publishable key.
       </div>
 
-      <form id="email-form" class="gate-card">
+      <form id="email-form" class="gate-card" hidden={!configured}>
         <p class="step">Step 1 of 2</p>
         <h2>Send a one-time code</h2>
         <label for="price-email">Work email</label>
