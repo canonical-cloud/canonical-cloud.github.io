@@ -23,6 +23,8 @@ test('people is a real route linked from the header, footer, and sitemap', async
   assert.match(people, /Cody Dyson/); assert.match(people, /Sales Engineer/);
   assert.match(people, /Rebecca Toni/);
   assert.match(people, /Georgiana Fabrecce/);
+  assert.match(people, /Utkarsh Shukla/);
+  assert.match(people, /Infosec Expert/);
 });
 test('the prices page authenticates with Supabase using built-in fetch and never inlines the catalog', async () => {
   const page = await read('src/pages/prices/index.astro');
