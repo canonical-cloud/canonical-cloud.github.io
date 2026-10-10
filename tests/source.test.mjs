@@ -15,13 +15,15 @@ test('public marketing navigation has no Product, login, or account creation act
     read('src/pages/index.astro'),
     read('src/pages/about/index.astro'),
   ]);
-  assert.doesNotMatch(header, />Product<\\/a>/);
+  assert.equal(header.includes('>Product</a>'), false);
   for (const source of [header, footer, home, about]) {
-    assert.doesNotMatch(source, /href=\\{site\\.(?:userUrl|orgUrl|authUrl)\\}/);
-    assert.doesNotMatch(source, /<(?:a|button)\\b[^>]*>\\s*(?:Sign in|Sign up|Log in|Create an account|Create account|User login|Organization login)/i);
+    for (const authPath of ['userUrl', 'orgUrl', 'authUrl']) {
+      assert.equal(source.includes('href={site.' + authPath + '}'), false);
+    }
+    assert.doesNotMatch(source, /<(?:a|button)\b[^>]*>\s*(?:Sign in|Sign up|Log in|Create an account|Create account|User login|Organization login)/i);
   }
-  assert.match(header, /href="\\/people\\/"/);
-  assert.match(home, /https:\\/\\/canonical\\.plus\\/quote\\//);
+  assert.ok(header.includes('href="/people/"'));
+  assert.ok(home.includes('https://canonical.plus/quote/'));
 });
 test('prices is a real route linked from the header, footer, and sitemap', async () => {
   const [header, footer, sitemap] = await Promise.all([read('src/components/Header.astro'), read('src/components/Footer.astro'), read('public/sitemap.xml')]);
