@@ -8,9 +8,20 @@ test('site stays Astro-only with a shared sticky header and footer', async () =>
   assert.match(pkg, /"astro"/); assert.doesNotMatch(pkg, /jekyll|hugo|react/i);
   assert.match(header, /site-header/); assert.match(footer, /site-footer/); assert.match(css, /position:sticky/);
 });
-test('login and signup use separate public boundaries', async () => {
-  const data = await read('src/data/site.ts');
-  assert.match(data, /userUrl/); assert.match(data, /orgUrl/); assert.match(data, /authUrl/);
+test('public marketing navigation has no Product, login, or account creation actions', async () => {
+  const [header, footer, home, about] = await Promise.all([
+    read('src/components/Header.astro'),
+    read('src/components/Footer.astro'),
+    read('src/pages/index.astro'),
+    read('src/pages/about/index.astro'),
+  ]);
+  assert.doesNotMatch(header, />Product<\\/a>/);
+  for (const source of [header, footer, home, about]) {
+    assert.doesNotMatch(source, /href=\\{site\\.(?:userUrl|orgUrl|authUrl)\\}/);
+    assert.doesNotMatch(source, /<(?:a|button)\\b[^>]*>\\s*(?:Sign in|Sign up|Log in|Create an account|Create account|User login|Organization login)/i);
+  }
+  assert.match(header, /href="\\/people\\/"/);
+  assert.match(home, /https:\\/\\/canonical\\.plus\\/quote\\//);
 });
 test('prices is a real route linked from the header, footer, and sitemap', async () => {
   const [header, footer, sitemap] = await Promise.all([read('src/components/Header.astro'), read('src/components/Footer.astro'), read('public/sitemap.xml')]);
