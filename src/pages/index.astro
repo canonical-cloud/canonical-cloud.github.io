@@ -10,7 +10,7 @@ import { site } from '../data/site';
       <p class="lede">{site.summary}</p>
       <div class="actions">
         <a class="button" href="/product/">Explore the product</a>
-        <a class="button secondary" href={site.authUrl}>Create an account</a>
+        <a class="button secondary" href="https://canonical.plus/">Explore Canonical Plus</a>
       </div>
       <p class="status"><span aria-hidden="true"></span>{site.status}</p>
     </div>
@@ -29,7 +29,7 @@ import { site } from '../data/site';
     <div class="section-heading">
       <p class="eyebrow">A useful first view</p>
       <h2>Understand the work before you enter the workspace.</h2>
-      <p>Public marketing, personal work, organization work, and account creation are separate surfaces. The site points to each one directly instead of asking a static page to handle credentials.</p>
+      <p>Canonical Cloud provides the wider operational foundation. Canonical Plus offers a public readiness overview, clear scoping, and a way to request an introduction without an account.</p>
     </div>
     <div class="card-grid">
       {site.capabilities.map(([title, body], index) => (
@@ -38,11 +38,11 @@ import { site } from '../data/site';
     </div>
   </section>
   <section class="access-section shell">
-    <div><p class="eyebrow">Choose your doorway</p><h2>Public context first. Authenticated work where it belongs.</h2></div>
+    <div><p class="eyebrow">Canonical Plus</p><h2>Explore readiness without signing in.</h2></div>
     <div class="access-grid">
-      <a href={site.userUrl}><small>For individuals</small><strong>User workspace</strong><span>Log in to your personal product surface.</span></a>
-      <a href={site.orgUrl}><small>For teams</small><strong>Organization workspace</strong><span>Enter the shared workspace for your organization.</span></a>
-      <a href={site.authUrl}><small>New here</small><strong>Create an account</strong><span>Sign up through the dedicated authentication boundary.</span></a>
+      <a href="https://canonical.plus/readiness/"><small>Get oriented</small><strong>Readiness services</strong><span>Understand the assessment and technical remediation approach.</span></a>
+      <a href="https://canonical.plus/quote/"><small>Plan your scope</small><strong>Get a quote</strong><span>Review a preliminary estimate and request follow-up.</span></a>
+      <a href="https://canonical.plus/people/"><small>Meet the team</small><strong>Our people</strong><span>See the engineering and security expertise behind the work.</span></a>
     </div>
   </section>
 </BaseLayout>

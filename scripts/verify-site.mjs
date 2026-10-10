@@ -5,10 +5,18 @@ const root = new URL('..', import.meta.url).pathname;
 const required = ['index.html', 'product/index.html', 'prices/index.html', 'trust/index.html', 'about/index.html'];
 for (const route of required) { await stat(join(root, 'dist', route)); }
 const home = await readFile(join(root, 'dist/index.html'), 'utf8');
-for (const marker of ['Canonical Cloud', '<header', '<footer', 'Log in', 'Sign up', 'Built with Astro']) {
+for (const marker of ['Canonical Cloud', '<header', '<footer', 'Built with Astro', 'Explore Canonical Plus']) {
   if (!home.includes(marker)) throw new Error(`missing built marker: ${marker}`);
 }
 if (!home.includes('href="/prices/"')) throw new Error('home navigation does not expose the standalone /prices/ route');
+const header = home.split('</header>')[0];
+if (header.includes('>Product</a>')) throw new Error('Product navigation must not appear in the public header');
+for (const label of ['Log in', 'Sign up', 'Create an account', 'User login', 'Organization login']) {
+  if (header.includes(label)) throw new Error(`public header must not advertise ${label}`);
+}
+if (home.includes('href="https://auth.canonical-cloud.github.io/"') || home.includes('href="https://user.canonical-cloud.github.io/"')) {
+  throw new Error('public marketing homepage must not advertise login or account creation');
+}
 if (/jekyll|hugo/i.test(home)) throw new Error('legacy generator marker found in built site');
 
 const prices = await readFile(join(root, 'dist/prices/index.html'), 'utf8');
