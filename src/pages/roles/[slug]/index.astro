@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { roles, type RolePage } from '../../../data/roles';
+
+export function getStaticPaths() {
+  return roles.map((role) => ({ params: { slug: role.slug }, props: { role } }));
+}
+
+interface Props { role: RolePage }
+const { role } = Astro.props;
+const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
+---
+<BaseLayout title={`${role.audience} | Canonical Cloud`} description={role.summary}>
+  <section class="page-hero shell role-detail-hero">
+    <nav class="role-breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a><span aria-hidden="true">/</span>
+      <a href="/roles/">By role</a><span aria-hidden="true">/</span>
+      <span aria-current="page">{role.label}</span>
+    </nav>
+    <div class="role-hero-layout">
+      <div>
+        <p class="eyebrow">{role.eyebrow}</p>
+        <h1>{role.headline}</h1>
+        <p class="lede">{role.summary}</p>
+        <div class="actions">
+          <a class="button" href="https://canonical.plus/quote/">Discuss your scope</a>
+          <a class="button secondary" href="#role-solutions">See how Canonical helps</a>
+        </div>
+      </div>
+      <aside class="role-trigger">
+        <p class="eyebrow">When this matters</p>
+        <h2>{role.trigger}</h2>
+        <p>{role.problem}</p>
+        <span class="role-trigger-foot">Focus on the decision in front of you.</span>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section shell role-priorities">
+    <div class="section-heading">
+      <p class="eyebrow">Your priorities</p>
+      <h2>What should get easier.</h2>
+    </div>
+    <div class="card-grid">
+      {role.priorities.map((priority, index) => (
+        <article class="card">
+          <span>{String(index + 1).padStart(2, '0')}</span>
+          <h3>{priority.title}</h3>
+          <p>{priority.detail}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section shell" id="role-solutions">
+    <div class="section-heading">
+      <p class="eyebrow">Two complementary paths</p>
+      <h2>Start where your team needs clarity.</h2>
+      <p>Canonical Cloud supports the operational picture; Canonical Plus supports a readiness program and remediation planning. Scope and product availability depend on the engagement and current implementation.</p>
+    </div>
+    <div class="role-product-grid">
+      <article class="role-product">
+        <p class="eyebrow">Canonical Cloud</p>
+        <h3>{role.cloud.headline}</h3>
+        <p>{role.cloud.summary}</p>
+        <ul>{role.cloud.bullets.map((bullet) => <li>{bullet}</li>)}</ul>
+        <a href="/product/">Explore the operational foundation →</a>
+      </article>
+      <article class="role-product">
+        <p class="eyebrow">Canonical Plus</p>
+        <h3>{role.plus.headline}</h3>
+        <p>{role.plus.summary}</p>
+        <ul>{role.plus.bullets.map((bullet) => <li>{bullet}</li>)}</ul>
+        <a href="https://canonical.plus/readiness/">Explore readiness services →</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="section shell two-column role-steps">
+    <div>
+      <p class="eyebrow">A practical first engagement</p>
+      <h2>Three steps from question to accountable work.</h2>
+      <p class="large-copy">Begin with a specific business trigger and map evidence to real systems before broadening the scope.</p>
+    </div>
+    <ol class="timeline">
+      {role.steps.map((step) => (
+        <li><strong>{step.title}</strong><span>{step.detail}</span></li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="section shell role-faq-section">
+    <p class="eyebrow">A question worth asking</p>
+    <h2>{role.question}</h2>
+    <p class="large-copy">{role.answer}</p>
+    <p class="role-boundary">Readiness preparation is not an independent audit, SOC 2 report, ISO certification, regulatory authorization, or guaranteed sales outcome. Formal findings belong to qualified independent reviewers.</p>
+  </section>
+
+  <section class="access-section shell role-final-cta">
+    <p class="eyebrow">Your next step</p>
+    <h2>Turn the next request into a scoped plan.</h2>
+    <p>Explain your framework goals, system footprint, deadlines, and open questions. Start with a preliminary assessment—not a promise of certification.</p>
+    <div class="actions">
+      <a class="button role-light-button" href="https://canonical.plus/quote/">Request a readiness estimate</a>
+      <a class="button role-outline-button" href="/roles/">Explore other roles</a>
+    </div>
+  </section>
+
+  <section class="section shell role-related">
+    <div class="section-heading"><p class="eyebrow">Working across functions?</p><h2>Bring the right partners into the conversation.</h2></div>
+    <div class="role-related-grid">
+      {otherRoles.map((other) => <a href={`/roles/${other.slug}/`}><strong>{other.label}</strong><span>{other.problem}</span></a>)}
+    </div>
+  </section>
+</BaseLayout>

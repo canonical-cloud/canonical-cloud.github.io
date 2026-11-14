@@ -90,3 +90,51 @@ test('Pages deployment permits only safe unconfigured pricing and the gate is hi
   assert.ok(prices.includes('if (!configured)'));
   assert.ok(prices.includes('emailForm.hidden = true'));
 });
+
+
+test('role landing pages are real Astro routes with one authoritative persona catalog', async () => {
+  const [data, hub, detail, header, footer, home, sitemap] = await Promise.all([
+    read('src/data/roles.ts'),
+    read('src/pages/roles/index.astro'),
+    read('src/pages/roles/[slug]/index.astro'),
+    read('src/components/Header.astro'),
+    read('src/components/Footer.astro'),
+    read('src/pages/index.astro'),
+    read('public/sitemap.xml'),
+  ]);
+  for (const slug of ['ceo', 'coo', 'cfo', 'cto', 'cro', 'security']) {
+    assert.ok(data.includes(`slug: '${slug}'`), `missing persona ${slug}`);
+    assert.ok(sitemap.includes(`/roles/${slug}/</loc>`), `missing indexed persona ${slug}`);
+    assert.ok(home.includes(`href="/roles/${slug}/"`), `homepage missing persona ${slug}`);
+  }
+  assert.match(detail, /getStaticPaths/);
+  assert.match(detail, /roles\.map/);
+  assert.match(detail, /role\.priorities\.map/);
+  assert.match(detail, /role\.cloud\.bullets\.map/);
+  assert.match(detail, /role\.plus\.bullets\.map/);
+  assert.match(detail, /role\.steps\.map/);
+  assert.match(detail, /role\.question/);
+  assert.match(hub, /role-grid/);
+  assert.match(header, /href="\/roles\/"/);
+  assert.match(footer, /href="\/roles\/"/);
+  assert.match(sitemap, /\/roles\/<\/loc>/);
+});
+
+test('role positioning distinguishes operational visibility from readiness and independent assurance', async () => {
+  const [hub, detail, data] = await Promise.all([
+    read('src/pages/roles/index.astro'),
+    read('src/pages/roles/[slug]/index.astro'),
+    read('src/data/roles.ts'),
+  ]);
+  for (const source of [hub, detail]) {
+    assert.match(source, /https:\/\/canonical\.plus\/readiness\//);
+    assert.match(source, /Canonical Cloud/);
+    assert.match(source, /Canonical Plus/);
+    assert.match(source, /independent/i);
+    assert.doesNotMatch(source, /href=\{site\.(?:authUrl|userUrl|orgUrl)\}/);
+  }
+  assert.match(data, /enterprise/i);
+  assert.match(data, /evidence/i);
+  assert.match(data, /remediation/i);
+  assert.doesNotMatch(data, /guaranteed certification|guaranteed sales growth/i);
+});
