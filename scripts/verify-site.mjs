@@ -66,7 +66,7 @@ for (const slug of roles) {
 }
 const seenDescriptions = new Set();
 for (const [pagePath, html] of builtPages) {
-  const headings = [...html.matchAll(/<h1(?:\\s|>)/g)];
+  const headings = [...html.matchAll(/<h1(?:\s|>)/g)];
   if (headings.length !== 1) throw new Error(`${pagePath} must have exactly one h1, found ${headings.length}`);
   const canonical = [...html.matchAll(/<link rel="canonical" href="([^"]+)"/g)];
   if (canonical.length !== 1 || canonical[0][1] !== `https://canonical-cloud.github.io${pagePath}`) {
@@ -82,11 +82,11 @@ for (const [pagePath, html] of builtPages) {
     throw new Error(`${pagePath} OpenGraph URL does not match canonical`);
   }
   if (/<meta[^>]*name="robots"[^>]*noindex/i.test(html)) throw new Error(`${pagePath} is accidentally noindex`);
-  for (const match of html.matchAll(/<a\\b[^>]*\\bhref="([^"]+)"/g)) {
+  for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
     const href = match[1].replaceAll('&amp;', '&');
     if (!href.startsWith('/') && !href.startsWith('#')) continue;
     const target = new URL(href, `https://canonical-cloud.github.io${pagePath}`);
-    const internalFile = join(root, 'dist', target.pathname.replace(/^\\/+/, ''), 'index.html');
+    const internalFile = join(root, 'dist', target.pathname.replace(/^\/+/, ''), 'index.html');
     let targetHtml;
     try { targetHtml = await readFile(internalFile, 'utf8'); }
     catch { throw new Error(`${pagePath} contains broken internal link: ${href}`); }
