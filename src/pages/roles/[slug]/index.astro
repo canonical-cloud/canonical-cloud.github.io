@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { roles, type RolePage } from '../../../data/roles';
+import { roles, roleBySlug, type RolePage } from '../../../data/roles';
+import { site } from '../../../data/site';
 
 export function getStaticPaths() {
   return roles.map((role) => ({ params: { slug: role.slug }, props: { role } }));
@@ -8,9 +9,13 @@ export function getStaticPaths() {
 
 interface Props { role: RolePage }
 const { role } = Astro.props;
-const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
+const otherRoles = role.relatedSlugs.map((slug) => {
+  const other = roleBySlug.get(slug);
+  if (!other) throw new Error(`Unknown related role ${slug} for ${role.slug}`);
+  return other;
+});
 ---
-<BaseLayout title={`${role.audience} | Canonical Cloud`} description={role.summary}>
+<BaseLayout title={`${role.audience} | Canonical Cloud`} description={role.seoDescription}>
   <section class="page-hero shell role-detail-hero">
     <nav class="role-breadcrumb" aria-label="Breadcrumb">
       <a href="/">Home</a><span aria-hidden="true">/</span>
@@ -23,7 +28,7 @@ const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
         <h1>{role.headline}</h1>
         <p class="lede">{role.summary}</p>
         <div class="actions">
-          <a class="button" href="https://canonical.plus/quote/">Discuss your scope</a>
+          <a class="button" href={site.consultationUrl}>{role.consultationLabel}</a>
           <a class="button secondary" href="#role-solutions">See how Canonical helps</a>
         </div>
       </div>
@@ -71,7 +76,7 @@ const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
         <h3>{role.plus.headline}</h3>
         <p>{role.plus.summary}</p>
         <ul>{role.plus.bullets.map((bullet) => <li>{bullet}</li>)}</ul>
-        <a href="https://canonical.plus/readiness/">Explore readiness services →</a>
+        <a href={site.readinessUrl}>Explore readiness services →</a>
       </article>
     </div>
   </section>
@@ -93,6 +98,7 @@ const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
     <p class="eyebrow">A question worth asking</p>
     <h2>{role.question}</h2>
     <p class="large-copy">{role.answer}</p>
+    {role.slug === 'cfo' && <p class="role-pricing-note"><a href="/prices/">Check Canonical Cloud pricing access</a>. The email verification gate may be unavailable if not configured.</p>}
     <p class="role-boundary">Readiness preparation is not an independent audit, SOC 2 report, ISO certification, regulatory authorization, or guaranteed sales outcome. Formal findings belong to qualified independent reviewers.</p>
   </section>
 
@@ -101,9 +107,10 @@ const otherRoles = roles.filter((item) => item.slug !== role.slug).slice(0, 3);
     <h2>Turn the next request into a scoped plan.</h2>
     <p>Explain your framework goals, system footprint, deadlines, and open questions. Start with a preliminary assessment—not a promise of certification.</p>
     <div class="actions">
-      <a class="button role-light-button" href="https://canonical.plus/quote/">Request a readiness estimate</a>
-      <a class="button role-outline-button" href="/roles/">Explore other roles</a>
+      <a class="button role-light-button" href={site.consultationUrl}>{role.consultationLabel}</a>
+      <a class="button role-outline-button" href={site.quoteUrl}>Explore an estimate</a>
     </div>
+    <p class="role-cta-note">Estimates are non-binding, and quote email delivery may be unavailable. Avoid sharing credentials, regulated data, or audit evidence through a public form.</p>
   </section>
 
   <section class="section shell role-related">

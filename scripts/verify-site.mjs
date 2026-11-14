@@ -49,5 +49,55 @@ for (const slug of roles) {
   }
   if (!roleIndex.includes(`href="/roles/${slug}/"`)) throw new Error(`role index missing ${slug}`);
   if (roleHtml.includes('href="https://auth.canonical-cloud.github.io/"')) throw new Error(`role ${slug} exposes login`);
+  if (!roleHtml.includes('href="https://calendly.com/hello-canonical/30min"')) {
+    throw new Error(`role ${slug} has no booking CTA`);
+  }
+  if (!roleHtml.includes('href="https://canonical.plus/quote/"')) {
+    throw new Error(`role ${slug} has no estimator CTA`);
+  }
+  if (!roleHtml.includes('email delivery may be unavailable')) {
+    throw new Error(`role ${slug} is missing estimator availability disclosure`);
+  }
 }
-console.log('Verified Astro routes, role landing pages, navigation, OTP gate, authenticated pricing fetch, and no static price leakage.');
+// Validate actual rendered routes and navigation, not only source-code strings.
+const builtPages = [['/', home], ['/roles/', roleIndex]];
+for (const slug of roles) {
+  builtPages.push([`/roles/${slug}/`, await readFile(join(root, 'dist', 'roles', slug, 'index.html'), 'utf8')]);
+}
+const seenDescriptions = new Set();
+for (const [pagePath, html] of builtPages) {
+  const headings = [...html.matchAll(/<h1(?:\s|>)/g)];
+  if (headings.length !== 1) throw new Error(`${pagePath} must have exactly one h1, found ${headings.length}`);
+  const canonical = [...html.matchAll(/<link rel="canonical" href="([^"]+)"/g)];
+  if (canonical.length !== 1 || canonical[0][1] !== `https://canonical-cloud.github.io${pagePath}`) {
+    throw new Error(`${pagePath} has incorrect/duplicate canonical metadata`);
+  }
+  const description = [...html.matchAll(/<meta name="description" content="([^"]+)"/g)];
+  if (description.length !== 1 || description[0][1].length < 70 || description[0][1].length > 165) {
+    throw new Error(`${pagePath} must have one useful meta description`);
+  }
+  if (seenDescriptions.has(description[0][1])) throw new Error(`${pagePath} repeats a meta description`);
+  seenDescriptions.add(description[0][1]);
+  if (!html.includes(`<meta property="og:url" content="${canonical[0][1]}"`)) {
+    throw new Error(`${pagePath} OpenGraph URL does not match canonical`);
+  }
+  if (/<meta[^>]*name="robots"[^>]*noindex/i.test(html)) throw new Error(`${pagePath} is accidentally noindex`);
+  for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
+    const href = match[1].replaceAll('&amp;', '&');
+    if (!href.startsWith('/') && !href.startsWith('#')) continue;
+    const target = new URL(href, `https://canonical-cloud.github.io${pagePath}`);
+    const internalFile = join(root, 'dist', target.pathname.replace(/^\/+/, ''), 'index.html');
+    let targetHtml;
+    try { targetHtml = await readFile(internalFile, 'utf8'); }
+    catch { throw new Error(`${pagePath} contains broken internal link: ${href}`); }
+    if (target.hash) {
+      const anchor = decodeURIComponent(target.hash.slice(1));
+      if (!targetHtml.includes(`id="${anchor}"`)) throw new Error(`${pagePath} contains broken fragment link: ${href}`);
+    }
+  }
+}
+for (const slug of roles) {
+  const html = builtPages.find(([path]) => path === `/roles/${slug}/`)[1];
+  if (!html.includes('aria-current="page"')) throw new Error(`missing current breadcrumb in ${slug}`);
+}
+console.log('Verified Astro routes, all role pages, accessible links, canonical metadata, CTAs, pricing OTP gate, and no static price leakage.');

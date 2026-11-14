@@ -24,6 +24,9 @@ export const site = {
   "orgUrl": "https://org.canonical-cloud.github.io/",
   "authUrl": "https://auth.canonical-cloud.github.io/",
   "githubUrl": "https://github.com/canonical-cloud",
+  "consultationUrl": "https://calendly.com/hello-canonical/30min",
+  "readinessUrl": "https://canonical.plus/readiness/",
+  "quoteUrl": "https://canonical.plus/quote/",
   "productionUrl": "https://canonical-cloud.github.io/"
 } as const;
 

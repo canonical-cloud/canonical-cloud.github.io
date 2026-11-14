@@ -1,7 +1,13 @@
+export const roleSlugs = ['ceo', 'coo', 'cfo', 'cto', 'cro', 'security'] as const;
+export type RoleSlug = (typeof roleSlugs)[number];
+
 export interface RolePage {
   slug: string;
   label: string;
   audience: string;
+  seoDescription: string;
+  relatedSlugs: RoleSlug[];
+  consultationLabel: string;
   eyebrow: string;
   headline: string;
   summary: string;
@@ -20,6 +26,9 @@ export const roles: RolePage[] = [
     slug: 'ceo',
     label: 'CEO / Founder',
     audience: 'Founders and CEOs',
+    seoDescription: 'Enterprise readiness for startup founders: connect operational ownership, infrastructure evidence, security requirements, and remediation priorities.',
+    relatedSlugs: ['coo', 'cto', 'cfo'],
+    consultationLabel: 'Book a founder readiness call',
     eyebrow: 'For CEOs and founders',
     headline: 'Build enterprise confidence without slowing your startup.',
     summary: 'Your next customer, investor, or partner wants evidence that your company can operate securely and reliably. Give the team a practical path forward without creating a full compliance department.',
@@ -45,13 +54,16 @@ export const roles: RolePage[] = [
       { title: 'Map what is true today', detail: 'Define systems, data, owners, controls, and evidence without inventing a readiness score.' },
       { title: 'Fund an executable roadmap', detail: 'Prioritize the work that reduces material risk and improves your ability to answer stakeholders.' }
     ],
-    question: 'Will this make us SOC 2 certified?',
-    answer: 'No. Canonical Plus can help prepare scope, controls, remediation, and evidence. A qualified independent auditor or certification body makes formal assurance decisions.'
+    question: 'Does readiness work give us a SOC 2 report?',
+    answer: 'No. Canonical Plus helps prepare scope, controls, remediation, and evidence. A qualified independent CPA firm issues a SOC 2 examination report; ISO 27001 certification follows a separate certification-body process.'
   },
   {
     slug: 'coo',
     label: 'COO / Operations',
     audience: 'COOs and operations leaders',
+    seoDescription: 'For operations leaders: assign control owners, manage evidence handoffs, and build repeatable infrastructure and compliance-readiness processes.',
+    relatedSlugs: ['ceo', 'security', 'cto'],
+    consultationLabel: 'Discuss an operations plan',
     eyebrow: 'For COOs and heads of operations',
     headline: 'Turn fragmented readiness work into a repeatable operating rhythm.',
     summary: 'Policies, vendor responsibilities, control owners, and evidence requests should not depend on one person remembering where everything lives.',
@@ -84,6 +96,9 @@ export const roles: RolePage[] = [
     slug: 'cfo',
     label: 'CFO / Finance',
     audience: 'CFOs and finance leaders',
+    seoDescription: 'For finance leaders: understand cloud operations, compliance-readiness scope, risk, and remediation priorities before committing budget.',
+    relatedSlugs: ['ceo', 'coo', 'cro'],
+    consultationLabel: 'Discuss readiness costs',
     eyebrow: 'For CFOs and finance leaders',
     headline: 'Put a plan and a cost boundary around operational risk.',
     summary: 'See what infrastructure and compliance readiness work is for, what depends on it, and what should be funded first—before an open-ended initiative absorbs the budget.',
@@ -110,12 +125,15 @@ export const roles: RolePage[] = [
       { title: 'Approve a scoped sequence', detail: 'Set milestones, ownership, and acceptance criteria before expanding investment.' }
     ],
     question: 'Can we see pricing without committing to an engagement?',
-    answer: 'Canonical Cloud publishes a pricing schedule behind an email one-time-code gate. Canonical Plus also offers a preliminary readiness estimate; the signed statement of work governs final scope and price.'
+    answer: 'Canonical Cloud has an email-verification pricing page, but pricing access depends on whether verification is configured. Canonical Plus provides a non-binding on-page readiness estimator; email delivery may be unavailable. A signed statement of work controls final terms.'
   },
   {
     slug: 'cto',
     label: 'CTO / Engineering',
     audience: 'CTOs and engineering leaders',
+    seoDescription: 'For engineering leaders: map services, deployment evidence, access controls, and actionable security remediation without manual evidence churn.',
+    relatedSlugs: ['security', 'coo', 'ceo'],
+    consultationLabel: 'Discuss technical remediation',
     eyebrow: 'For CTOs and VP Engineering',
     headline: 'Make security and readiness work fit how engineers ship.',
     summary: 'Turn requirements into concrete changes across cloud services, identity, deployments, logging, and data controls—without treating engineers as manual evidence collectors.',
@@ -148,6 +166,9 @@ export const roles: RolePage[] = [
     slug: 'cro',
     label: 'CRO / Sales',
     audience: 'CROs and sales leaders',
+    seoDescription: 'For sales leaders: prepare accurate answers to enterprise security questionnaires, map evidence gaps, and coordinate procurement-readiness work.',
+    relatedSlugs: ['ceo', 'security', 'cto'],
+    consultationLabel: 'Discuss a procurement blocker',
     eyebrow: 'For CROs and sales leaders',
     headline: 'Keep security reviews from becoming a blind spot in your pipeline.',
     summary: 'When a serious buyer asks for your security posture, give sales an accurate internal path to answers, evidence, and owners rather than a promise the company cannot yet support.',
@@ -180,6 +201,9 @@ export const roles: RolePage[] = [
     slug: 'security',
     label: 'Security / CISO',
     audience: 'Security leads and CISOs',
+    seoDescription: 'For security leaders: scope applicable frameworks, assess control and evidence gaps, and prepare risk-based remediation and independent review.',
+    relatedSlugs: ['cto', 'coo', 'cro'],
+    consultationLabel: 'Discuss security readiness',
     eyebrow: 'For heads of security and CISOs',
     headline: 'Build controls you can operate and evidence you can defend.',
     summary: 'Security maturity requires more than a policy document. Connect control intent, technical implementation, evidence quality, and remediation into work your organization can sustain.',
@@ -211,3 +235,15 @@ export const roles: RolePage[] = [
 ];
 
 export const roleBySlug = new Map(roles.map((role) => [role.slug, role]));
+
+if (roles.length !== roleSlugs.length || roleBySlug.size !== roles.length ||
+    roleSlugs.some((slug) => !roleBySlug.has(slug))) {
+  throw new Error('Role catalog must contain every approved slug exactly once.');
+}
+for (const role of roles) {
+  if (role.relatedSlugs.length !== 3 ||
+      new Set(role.relatedSlugs).size !== role.relatedSlugs.length ||
+      role.relatedSlugs.some((slug) => slug === role.slug || !roleBySlug.has(slug))) {
+    throw new Error(`Invalid related roles configured for ${role.slug}`);
+  }
+}

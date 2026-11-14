@@ -127,7 +127,7 @@ test('role positioning distinguishes operational visibility from readiness and i
     read('src/data/roles.ts'),
   ]);
   for (const source of [hub, detail]) {
-    assert.match(source, /https:\/\/canonical\.plus\/readiness\//);
+    assert.match(source, /site\.readinessUrl/);
     assert.match(source, /Canonical Cloud/);
     assert.match(source, /Canonical Plus/);
     assert.match(source, /independent/i);
@@ -137,4 +137,71 @@ test('role positioning distinguishes operational visibility from readiness and i
   assert.match(data, /evidence/i);
   assert.match(data, /remediation/i);
   assert.doesNotMatch(data, /guaranteed certification|guaranteed sales growth/i);
+});
+
+test('all six personas have complete, unique, specific copy and valid related links', async () => {
+  const ts = (await import('typescript')).default;
+  const source = await read('src/data/roles.ts');
+  const js = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const { roles, roleSlugs, roleBySlug } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
+  assert.deepEqual(roleSlugs, ['ceo', 'coo', 'cfo', 'cto', 'cro', 'security']);
+  assert.equal(roles.length, roleSlugs.length);
+  assert.equal(roleBySlug.size, roles.length);
+  assert.equal(new Set(roles.map((role) => role.slug)).size, roles.length);
+  assert.equal(new Set(roles.map((role) => role.headline)).size, roles.length);
+  assert.equal(new Set(roles.map((role) => role.seoDescription)).size, roles.length);
+  assert.equal(new Set(roles.map((role) => role.consultationLabel)).size, roles.length);
+  for (const role of roles) {
+    assert.ok(roleSlugs.includes(role.slug), role.slug);
+    assert.match(role.slug, /^[a-z]+$/);
+    assert.ok(role.seoDescription.length >= 90 && role.seoDescription.length <= 160, `SEO description length for ${role.slug}`);
+    for (const field of ['label', 'audience', 'headline', 'summary', 'problem', 'trigger', 'question', 'answer', 'consultationLabel']) {
+      assert.ok(role[field].trim().length > 15 || field === 'label', `missing ${field}: ${role.slug}`);
+    }
+    assert.equal(role.priorities.length, 3);
+    assert.equal(role.steps.length, 3);
+    for (const offer of [role.cloud, role.plus]) {
+      assert.ok(offer.headline.length > 10 && offer.summary.length > 40);
+      assert.equal(offer.bullets.length, 3);
+      assert.equal(new Set(offer.bullets).size, 3);
+    }
+    assert.equal(role.relatedSlugs.length, 3);
+    assert.equal(new Set(role.relatedSlugs).size, 3);
+    assert.ok(role.relatedSlugs.every((slug) => slug !== role.slug && roleBySlug.has(slug)));
+    assert.doesNotMatch(role.headline + role.summary + role.answer, /guaranteed (?:audit|certification|deal)/i);
+  }
+  assert.doesNotMatch(roleBySlug.get('ceo').question, /SOC 2 certified/i);
+  assert.match(roleBySlug.get('ceo').answer, /independent CPA firm/);
+  assert.match(roleBySlug.get('cfo').answer, /verification is configured/);
+  assert.match(roleBySlug.get('cfo').answer, /email delivery may be unavailable/);
+});
+
+test('role UX uses clear accessible cards, genuine consultation links, and transparent estimate boundaries', async () => {
+  const [hub, detail, site, css] = await Promise.all([
+    read('src/pages/roles/index.astro'),
+    read('src/pages/roles/[slug]/index.astro'),
+    read('src/data/site.ts'),
+    read('src/styles/global.css'),
+  ]);
+  assert.match(hub, /aria-labelledby/);
+  assert.match(hub, /aria-describedby/);
+  assert.match(hub, /role-\$\{role\.slug\}-title/);
+  assert.match(hub, /role-\$\{role\.slug\}-problem/);
+  assert.match(detail, /role\.relatedSlugs\.map/);
+  assert.doesNotMatch(detail, /roles\.filter\(\(item\)/);
+  assert.match(detail, /description=\{role\.seoDescription\}/);
+  for (const source of [hub, detail]) {
+    assert.match(source, /site\.consultationUrl/);
+    assert.match(source, /site\.quoteUrl/);
+    assert.match(source, /role-cta-note/);
+    assert.match(source, /email delivery may be unavailable/i);
+    assert.doesNotMatch(source, /href=\{site\.(?:authUrl|userUrl|orgUrl)\}/);
+  }
+  assert.match(site, /calendly\.com\/hello-canonical\/30min/);
+  assert.match(css, /scroll-margin-top:6rem/);
+  assert.match(css, /role-card:focus-visible/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(detail, /role\.slug === 'cfo'/);
 });
