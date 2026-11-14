@@ -10,3 +10,11 @@
 @media(max-width:860px){.role-grid,.role-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.role-hero-layout{grid-template-columns:1fr}.role-trigger{max-width:40rem}.role-related-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.role-grid,.role-product-grid,.role-related-grid,.role-home-grid{grid-template-columns:1fr}.role-card{min-height:14rem}.role-detail-hero{padding-top:1.5rem}.role-breadcrumb{margin-bottom:2rem}.role-final-cta h2{font-size:clamp(2.3rem,9vw,3.5rem)}.role-product{padding:1.4rem}}
 @media(prefers-reduced-motion:reduce){.role-card{transition:none}}
+
+/* Role-page accessibility and conversion hardening. */
+#choose-role,#role-solutions{scroll-margin-top:6rem}
+.role-card:focus-visible,.role-home-grid a:focus-visible,.role-related-grid a:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.role-cta-note{max-width:44rem;margin:1rem 0 0;color:#d7e8f7;font-size:.875rem;line-height:1.6}
+.role-pricing-note{margin:1.5rem 0 0;line-height:1.6}
+.role-pricing-note a{color:var(--accent);font-weight:800;text-underline-offset:.25rem}
+@media(prefers-reduced-motion:reduce){.role-card:hover{transform:none}}

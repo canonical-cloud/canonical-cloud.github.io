@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { roles } from '../../data/roles';
+import { site } from '../../data/site';
 ---
 <BaseLayout
   title="Solutions by role | Canonical Cloud"
@@ -12,7 +13,7 @@ import { roles } from '../../data/roles';
     <p>Whether you are closing an enterprise deal, making operations repeatable, or turning security gaps into engineering work, start with your team's real responsibility.</p>
     <div class="actions">
       <a class="button" href="#choose-role">Choose your role</a>
-      <a class="button secondary" href="https://canonical.plus/readiness/">Explore readiness services</a>
+      <a class="button secondary" href={site.readinessUrl}>Explore readiness services</a>
     </div>
   </section>
 
@@ -24,10 +25,10 @@ import { roles } from '../../data/roles';
     </div>
     <div class="role-grid">
       {roles.map((role, index) => (
-        <a class="role-card" href={`/roles/${role.slug}/`} aria-label={`Explore Canonical for ${role.audience}`}>
+        <a class="role-card" href={`/roles/${role.slug}/`} aria-labelledby={`role-${role.slug}-title`} aria-describedby={`role-${role.slug}-problem`}>
           <span class="role-card-number">{String(index + 1).padStart(2, '0')}</span>
-          <h3>{role.label}</h3>
-          <p>{role.problem}</p>
+          <h3 id={`role-${role.slug}-title`}>{role.label}</h3>
+          <p id={`role-${role.slug}-problem`}>{role.problem}</p>
           <span class="role-card-link" aria-hidden="true">Explore this role →</span>
         </a>
       ))}
@@ -50,7 +51,7 @@ import { roles } from '../../data/roles';
         <p class="eyebrow">Canonical Plus</p>
         <h3>Readiness and remediation</h3>
         <p>Scope applicable requirements, identify control and evidence gaps, prioritize fixes, and prepare for an independent review.</p>
-        <a href="https://canonical.plus/readiness/">Explore Canonical Plus →</a>
+        <a href={site.readinessUrl}>Explore Canonical Plus →</a>
       </article>
     </div>
     <p class="role-boundary">Canonical Plus provides readiness support, not audit opinions, certifications, authorizations, or guaranteed approval. Formal decisions remain with qualified independent reviewers and authorities.</p>
@@ -61,8 +62,9 @@ import { roles } from '../../data/roles';
     <h2>Tell us what the buyer, board, or next milestone requires.</h2>
     <p>A well-scoped readiness discussion begins with the systems, deadlines, and business commitments involved.</p>
     <div class="actions">
-      <a class="button role-light-button" href="https://canonical.plus/quote/">Scope a readiness engagement</a>
-      <a class="button role-outline-button" href="/prices/">Canonical Cloud pricing</a>
+      <a class="button role-light-button" href={site.consultationUrl}>Book a readiness conversation</a>
+      <a class="button role-outline-button" href={site.quoteUrl}>Explore an estimate</a>
     </div>
+    <p class="role-cta-note">The quote is a non-binding planning estimate. Email delivery may be unavailable; book an intro for follow-up. Do not include credentials or sensitive evidence in a public form.</p>
   </section>
 </BaseLayout>
