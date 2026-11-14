@@ -2,13 +2,18 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
-const required = ['index.html', 'product/index.html', 'prices/index.html', 'trust/index.html', 'about/index.html'];
+const roles = ['ceo', 'coo', 'cfo', 'cto', 'cro', 'security'];
+const required = ['index.html', 'product/index.html', 'prices/index.html', 'trust/index.html', 'about/index.html', 'roles/index.html', ...roles.map((slug) => `roles/${slug}/index.html`)];
 for (const route of required) { await stat(join(root, 'dist', route)); }
 const home = await readFile(join(root, 'dist/index.html'), 'utf8');
 for (const marker of ['Canonical Cloud', '<header', '<footer', 'Built with Astro', 'Explore Canonical Plus']) {
   if (!home.includes(marker)) throw new Error(`missing built marker: ${marker}`);
 }
 if (!home.includes('href="/prices/"')) throw new Error('home navigation does not expose the standalone /prices/ route');
+if (!home.includes('href="/roles/"')) throw new Error('home navigation does not expose the role index');
+for (const slug of roles) {
+  if (!home.includes(`href="/roles/${slug}/"`)) throw new Error(`homepage missing role: ${slug}`);
+}
 const header = home.split('</header>')[0];
 if (header.includes('>Product</a>')) throw new Error('Product navigation must not appear in the public header');
 for (const label of ['Log in', 'Sign up', 'Create an account', 'User login', 'Organization login']) {
@@ -33,4 +38,16 @@ if (!prices.includes('/auth/v1/otp') || !prices.includes('/auth/v1/verify')) {
 }
 if (!prices.includes('/functions/v1/')) throw new Error('prices page is missing authenticated pricing-function request');
 
-console.log('Verified Astro routes, navigation, OTP gate, authenticated pricing fetch, and no static price leakage.');
+const roleIndex = await readFile(join(root, 'dist/roles/index.html'), 'utf8');
+for (const slug of roles) {
+  const roleHtml = await readFile(join(root, 'dist', 'roles', slug, 'index.html'), 'utf8');
+  for (const marker of ['<h1', 'Canonical Cloud', 'Canonical Plus', 'independent', 'https://canonical.plus/quote/']) {
+    if (!roleHtml.includes(marker)) throw new Error(`role ${slug} missing required content: ${marker}`);
+  }
+  if (!roleHtml.includes(`https://canonical-cloud.github.io/roles/${slug}/`)) {
+    throw new Error(`role ${slug} missing canonical URL`);
+  }
+  if (!roleIndex.includes(`href="/roles/${slug}/"`)) throw new Error(`role index missing ${slug}`);
+  if (roleHtml.includes('href="https://auth.canonical-cloud.github.io/"')) throw new Error(`role ${slug} exposes login`);
+}
+console.log('Verified Astro routes, role landing pages, navigation, OTP gate, authenticated pricing fetch, and no static price leakage.');
